@@ -27,10 +27,11 @@
       cta = 'Thiết lập hồ sơ';
       href = '#/onboarding';
     } else if (!ctx.hasDiagnostic) {
-      title = 'Làm bài kiểm tra đầu vào';
+      title = 'Làm bài kiểm tra đầu vào theo chương';
       body =
-        'Bài kiểm tra thích ứng sẽ đi qua từng chủ đề theo thang Nhận biết → Thông hiểu → ' +
-        'Vận dụng để xác định chính xác bạn đang vững ở đâu và hổng ở đâu.';
+        'Chọn chương bạn đã học: bài kiểm tra thích ứng đi qua từng chủ đề của chương theo thang ' +
+        'Nhận biết → Thông hiểu → Vận dụng để xác định bạn đang vững ở đâu và hổng ở đâu. ' +
+        'Xong chương nào, hồ sơ năng lực cập nhật ngay chương đó.';
       cta = 'Bắt đầu kiểm tra';
       href = '#/diagnostic';
     } else {
@@ -53,6 +54,38 @@
       el('h2', { class: 'page-title', style: { color: '#fff' } }, title),
       el('p', { style: { color: 'rgba(234,255,245,0.8)', lineHeight: '1.7', fontWeight: 500 } }, body),
       el('div', { class: 'row' }, el('a', { class: 'btn btn-lime', href: href }, cta, U.icon('trending_flat'))),
+    );
+  }
+
+  /** Lối tắt sang Bài tập cá nhân hóa, kèm chủ đề đang được ưu tiên. */
+  function exercisesCard(ctx) {
+    if (!ctx.hasProfile || !AM.exercises || !AM.exercises.isLoaded) return null;
+    const total = AM.exercises.forGrade(ctx.profile.grade).length;
+    if (total === 0) return null;
+    const recs = AM.exercises.recommend(ctx, { topics: 2, perTopic: 1 });
+    return ui.sectionCard(
+      [U.icon('library_books'), 'Bài tập cá nhân hóa'],
+      total + ' bài tập ' + C.GRADE_LABELS[ctx.profile.grade] + ', chọn theo đúng chỗ bạn còn yếu.',
+      recs.length
+        ? el(
+            'div',
+            { class: 'list' },
+            recs.map((r) =>
+              el(
+                'a',
+                { class: 'list-row', href: '#/exercises?topic=' + encodeURIComponent(r.topic.id) },
+                el('span', { class: 'grow' }, r.topic.title),
+                r.source !== 'default' ? ui.bandChip(r.mastery) : null,
+                U.icon('chevron_right'),
+              ),
+            ),
+          )
+        : null,
+      el(
+        'div',
+        { class: 'row' },
+        el('a', { class: 'btn btn-lime btn-sm', href: '#/exercises' }, 'Làm bài tập gợi ý', U.icon('trending_flat')),
+      ),
     );
   }
 
@@ -260,6 +293,7 @@
       ),
       heroCard(ctx),
       todayCard(ctx),
+      exercisesCard(ctx),
       statsCard(ctx),
       el('div', { class: 'grid-2' }, treeCard(ctx), calendarCard(ctx)),
       badgesCard(ctx),

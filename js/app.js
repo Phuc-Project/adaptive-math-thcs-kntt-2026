@@ -22,6 +22,8 @@
   R.register('/learning-path', V.learningPath);
   R.register('/theory', V.theory);
   R.register('/practice', V.practice);
+  R.register('/exercises', V.exercises);
+  R.register('/tutor', V.tutor);
   R.register('/errors', V.errors);
   R.register('/digital-tasks', V.digitalTasks);
 

@@ -60,6 +60,18 @@
     );
   }
 
+  /** Nút sang kho bài tập tự luyện của chủ đề (ẩn khi tài liệu không có bài). */
+  function exercisesLink(topicId) {
+    const n = AM.exercises ? AM.exercises.countForTopic(topicId) : 0;
+    if (n === 0) return null;
+    return el(
+      'a',
+      { class: 'btn btn-outline', href: '#/exercises?topic=' + encodeURIComponent(topicId) },
+      U.icon('library_books'),
+      'Bài tập tự luyện (' + n + ')',
+    );
+  }
+
   function view(params, ctx) {
     const topicId = params.topic;
     const topic = topicId ? AM.topics.getTopicById(topicId) : null;
@@ -100,6 +112,7 @@
             'Chuyển sang luyện tập',
           ),
         ),
+        el('div', { class: 'row', style: { justifyContent: 'center' } }, exercisesLink(topicId)),
       );
     }
 
@@ -148,6 +161,7 @@
           'Luyện tập bài này',
           U.icon('trending_flat'),
         ),
+        exercisesLink(topicId),
         el('a', { class: 'btn btn-ghost', href: '#/learning-path' }, 'Về lộ trình'),
       ),
       ui.footerNote(),

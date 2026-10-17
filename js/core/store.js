@@ -164,6 +164,12 @@
       finished: s.finished === true,
       stopReason: typeof s.stopReason === 'string' ? s.stopReason : null,
       topicStates: isObj(s.topicStates) ? s.topicStates : {},
+      // Kiểm tra theo chương: trạng thái từng chương + chương đang làm dở.
+      chapters: isObj(s.chapters) ? s.chapters : null,
+      activeChapter: typeof s.activeChapter === 'number' ? s.activeChapter : null,
+      runId: typeof s.runId === 'string' ? s.runId : null,
+      runStartedAt: num(s.runStartedAt, 0),
+      revision: num(s.revision, 0),
     };
   }
 
@@ -202,6 +208,10 @@
       sessions: [],
       usedQuestionIds: [],
       completedActivities: [],
+      // Bài tập tự luyện: { [exerciseId]: { s: 'done' | 'stuck', at: ms, a?: 'A'..'D' } }
+      exercises: {},
+      // Lộ trình do Gia sư AI lập: { plan, model, builtAt, basedOn, weeks, done: { 'w1d2t0': true } }
+      aiRoadmap: null,
     };
   }
 
@@ -233,7 +243,19 @@
       sessions: Array.isArray(s.sessions) ? s.sessions.filter(isObj) : [],
       usedQuestionIds: strArr(s.usedQuestionIds),
       completedActivities: strArr(s.completedActivities),
+      exercises: isObj(s.exercises) ? s.exercises : {},
+      aiRoadmap: isObj(s.aiRoadmap) && isObj(s.aiRoadmap.plan) ? s.aiRoadmap : null,
     };
+  }
+
+  /** Giữ tối đa `cap` bản ghi bài tập mới nhất để blob không phình quá 1 MB. */
+  function pruneExercises(map, cap) {
+    const ids = Object.keys(map || {});
+    if (ids.length <= cap) return map || {};
+    ids.sort((a, b) => (map[b].at || 0) - (map[a].at || 0));
+    const out = {};
+    for (const id of ids.slice(0, cap)) out[id] = map[id];
+    return out;
   }
 
   /**
@@ -245,6 +267,7 @@
       sessions: state.sessions.slice(-50),
       errors: state.errors.slice(-500),
       usedQuestionIds: state.usedQuestionIds.slice(-2000),
+      exercises: pruneExercises(state.exercises, 4000),
     });
     if (write(KEYS.learner, pruned)) {
       touch('learner');
@@ -256,6 +279,7 @@
       sessions: pruned.sessions.slice(-20),
       errors: pruned.errors.slice(-200),
       usedQuestionIds: pruned.usedQuestionIds.slice(-500),
+      exercises: pruneExercises(pruned.exercises, 1500),
     });
     const ok = write(KEYS.learner, aggressive);
     if (ok) touch('learner');

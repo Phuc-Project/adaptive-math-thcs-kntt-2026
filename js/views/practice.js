@@ -23,6 +23,55 @@
     assessment: 'Kiểm tra nhanh',
   };
 
+  /** Câu hỏi dạng chữ (LaTeX) để gửi cho Gia sư AI. */
+  function questionAsText(q) {
+    const lines = [q.prompt || ''];
+    if (q.type === 'mcq') {
+      for (const o of q.options || []) lines.push(o.label + '. ' + o.content);
+    } else if (q.type === 'tf') {
+      (q.statements || []).forEach((st, i) => lines.push(String.fromCharCode(97 + i) + ') ' + (st.content || st.text || '')));
+    }
+    return lines.join('\n');
+  }
+
+  function answerAsText(q) {
+    let key = AM.practiceSelector.serializeCorrectAnswer(q);
+    if (q.solution) key += '. Lời giải tham khảo: ' + q.solution;
+    return key;
+  }
+
+  /** Đáp án học sinh đã chọn, kèm nội dung phương án để AI hiểu em nghĩ gì. */
+  function studentAnswerText(q, answer, score) {
+    let txt = AM.practiceSelector.serializeAnswer(answer) || '(bỏ trống)';
+    if (q.type === 'mcq' && typeof answer === 'string') {
+      const opt = (q.options || []).find((o) => o.label === answer);
+      if (opt) txt += '. ' + opt.content;
+    }
+    return txt + (score >= 0.75 ? ' (đúng)' : score > 0 ? ' (đúng một phần)' : ' (sai)');
+  }
+
+  /** Sau khi chấm: học sinh hỏi Gia sư AI vì sao đúng/sai. */
+  function tutorFor(q, answer, score) {
+    if (!AM.tutorUI) return null;
+    const topic = AM.topics.getTopicById(q.topicId);
+    return AM.tutorUI.launcher({
+      key: 'q:' + q.id + ':' + AM.practiceSelector.serializeAnswer(answer),
+      mode: 'explain',
+      label: score >= 0.75 ? 'Vì sao đúng? Hỏi gia sư AI' : 'Vì sao em sai? Hỏi gia sư AI',
+      autoAsk: { mode: 'explain' },
+      allowUpload: true,
+      context: {
+        grade: topic ? topic.grade : null,
+        topic: topic ? topic.chapterTitle + ' — ' + topic.title : null,
+        level: q.level,
+        kind: 'Trắc nghiệm luyện tập',
+        questionText: questionAsText(q),
+        answerKey: answerAsText(q),
+        studentAnswer: studentAnswerText(q, answer, score),
+      },
+    });
+  }
+
   function view(params, ctx) {
     const topicId = params.topic;
     const topic = topicId ? AM.topics.getTopicById(topicId) : null;
@@ -359,6 +408,7 @@
           : null,
         rt.reveal ? suggestionBox() : null,
         rt.reveal ? ui.solutionBlock(question) : null,
+        rt.reveal ? tutorFor(question, rt.answer, rt.lastScore) : null,
         el(
           'div',
           { class: 'row', style: { justifyContent: 'space-between' } },

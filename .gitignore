@@ -2,9 +2,6 @@
 # Mọi file trong repo đều là file được deploy.
 
 # Editor / OS
-.claude/
-.vercel/
-docs/
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -12,6 +9,8 @@ docs/
 Thumbs.db
 desktop.ini
 *.swp
+.claude/
+.vercel/
 
 # Logs
 *.log
@@ -27,3 +26,7 @@ tools/package-lock.json
 
 # Bản sao lưu ngân hàng câu hỏi trước khi sửa lỗi mojibake (~3 MB).
 data/*.mojibake-backup
+
+# Tài liệu PDF thô (nguồn trích xuất, không phục vụ trực tiếp trên web).
+data/*.pdf
+

@@ -298,7 +298,11 @@
 
     return {
       builtAt: new Date().toISOString(),
-      sessionId: session.sessionId || null,
+      // Mỗi chương kiểm tra xong tăng `revision`, nên lộ trình học (so khớp
+      // theo sessionId) tự dựng lại khi hồ sơ có thêm dữ liệu chương mới.
+      sessionId: session.sessionId
+        ? session.sessionId + (session.revision ? '#r' + session.revision : '')
+        : null,
       grade: profile.grade,
       theta: session.theta,
       standardError: session.standardError,

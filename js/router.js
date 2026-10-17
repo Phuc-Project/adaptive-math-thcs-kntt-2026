@@ -79,6 +79,8 @@
     '/learning-path',
     '/theory',
     '/practice',
+    '/exercises',
+    '/tutor',
     '/errors',
     '/classroom',
   ];

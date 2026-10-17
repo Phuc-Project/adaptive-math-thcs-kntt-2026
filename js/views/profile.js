@@ -75,6 +75,31 @@
     );
   }
 
+  /** Chương chưa kiểm tra → mời kiểm tra chương đó; đã kiểm tra → mở bài tập của chủ đề yếu nhất. */
+  function chapterActions(ctx, c) {
+    const topics = AM.topics.TOPICS.filter(
+      (t) => t.grade === ctx.knowledge.grade && t.chapterTitle === c.chapterTitle,
+    );
+    if (topics.length === 0) return null;
+    if (c.testedCount === 0) {
+      return el(
+        'a',
+        { class: 'btn btn-ghost btn-sm', href: '#/diagnostic?chapter=' + topics[0].chapter },
+        'Kiểm tra chương',
+      );
+    }
+    const weakest = ctx.knowledge.topics
+      .filter((t) => t.chapterTitle === c.chapterTitle && AM.exercises.countForTopic(t.topicId) > 0)
+      .sort((a, b) => a.mastery - b.mastery)[0];
+    return weakest
+      ? el(
+          'a',
+          { class: 'btn btn-ghost btn-sm', href: '#/exercises?topic=' + encodeURIComponent(weakest.topicId) },
+          'Bài tập',
+        )
+      : null;
+  }
+
   function chapterList(ctx) {
     return ui.sectionCard(
       [U.icon('menu_book'), 'Chi tiết theo chương'],
@@ -102,6 +127,7 @@
               ),
               el('span', { style: { minWidth: '9rem' } }, ui.bar(c.mastery, bandId)),
               ui.pill(U.pct(c.mastery), 'tone-' + bandId),
+              chapterActions(ctx, c),
             );
           }),
       ),
@@ -386,7 +412,9 @@
         'div',
         { class: 'row' },
         el('a', { class: 'btn btn-lime', href: '#/learning-path' }, 'Xem lộ trình học', U.icon('trending_flat')),
-        el('a', { class: 'btn btn-ghost', href: '#/diagnostic' }, 'Kiểm tra lại'),
+        el('a', { class: 'btn btn-outline', href: '#/learning-path' }, U.icon('smart_toy'), 'Lộ trình do Gia sư AI lập'),
+        el('a', { class: 'btn btn-primary', href: '#/exercises' }, 'Bài tập cá nhân hóa'),
+        el('a', { class: 'btn btn-ghost', href: '#/diagnostic' }, 'Kiểm tra thêm chương / kiểm tra lại'),
       ),
       ui.footerNote(),
     );

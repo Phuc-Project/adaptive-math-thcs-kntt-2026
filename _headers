@@ -19,9 +19,26 @@
 # this file ISO-8859-1 would render every Vietnamese diacritic as mojibake
 # ("mệnh đề" → "má»‡nh Ä‘á»"). The file also keeps its UTF-8 BOM, which pins
 # the decoding a second time.
-/data/*
+/data/questions.js
   Cache-Control: public, max-age=604800
   Content-Type: text/javascript; charset=utf-8
+
+/data/examples.js
+  Cache-Control: public, max-age=604800
+  Content-Type: text/javascript; charset=utf-8
+
+/data/exercises.js
+  Cache-Control: public, max-age=604800
+  Content-Type: text/javascript; charset=utf-8
+
+# Ảnh đề bài tập: KHÔNG được dính rule .js ở trên (Content-Type sai làm ảnh hỏng).
+/data/exercises/img/*
+  Cache-Control: public, max-age=2592000
+  Content-Type: image/webp
+
+# Gia sư AI (Pages Function) — không bao giờ cache câu trả lời.
+/api/*
+  Cache-Control: no-store
 
 # Everything else is served with must-revalidate rather than a max-age.
 #

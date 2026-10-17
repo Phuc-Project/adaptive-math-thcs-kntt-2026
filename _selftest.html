@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
     <script src="data/questions.js"></script>
     <script src="data/examples.js"></script>
+    <script src="data/exercises.js"></script>
     <script src="js/core/util.js"></script>
     <script src="js/core/constants.js"></script>
     <script src="js/core/topics.js"></script>
@@ -21,6 +22,9 @@
     <script src="js/core/sync.js"></script>
     <script src="js/core/classroom.js"></script>
     <script src="js/core/questionBank.js"></script>
+    <script src="js/core/exerciseBank.js"></script>
+    <script src="js/core/tutorPrompt.js"></script>
+    <script src="js/core/tutor.js"></script>
     <script src="js/core/latex.js"></script>
     <script src="js/core/irt.js"></script>
     <script src="js/core/cat.js"></script>
@@ -45,6 +49,9 @@
     <script src="js/views/learningPath.js"></script>
     <script src="js/views/theory.js"></script>
     <script src="js/views/practice.js"></script>
+    <script src="js/views/tutor.js"></script>
+    <script src="js/views/aiRoadmap.js"></script>
+    <script src="js/views/exercises.js"></script>
     <script src="js/views/errors.js"></script>
     <script src="js/views/examples.js"></script>
     <script src="js/router.js"></script>
@@ -76,6 +83,9 @@
       var pass = 0;
       var fail = 0;
 
+      var asyncChecks = [];
+      function checkAsync(name, fn) { asyncChecks.push([name, fn]); }
+
       function check(name, fn) {
         try {
           var r = fn();
@@ -97,13 +107,14 @@
       // --- 1. Modules present -------------------------------------------------
       var mods = ['util','const','topics','store','fb','auth','sync','classroom','bank',
                   'latex','irt','cat','bkt','srs','adaptive','profiling','tree',
-                  'practiceSelector','path','today','ui','router','views'];
+                  'practiceSelector','path','today','ui','router','views','exercises','tutor','tutorUI','aiRoadmapUI'];
       mods.forEach(function (m) {
         check('module AM.' + m, function () { return AM[m] ? true : 'thiếu'; });
       });
 
       var views = ['landing','login','admin','teacher','classroom','home','onboarding',
-                   'diagnostic','profile','learningPath','theory','practice','errors'];
+                   'diagnostic','profile','learningPath','theory','practice','errors',
+                   'exercises','tutor'];
       views.forEach(function (v) {
         check('view ' + v, function () {
           return typeof AM.views[v] === 'function' ? true : 'không phải hàm';
@@ -140,14 +151,14 @@
       });
 
       // --- 4. CAT ladder ------------------------------------------------------
-      var pool11 = AM.bank.getPoolForGrade(11);
-      check('pool grade 11 non-empty', function () {
-        return pool11.length > 100 ? true : 'len=' + pool11.length;
+      var poolG = AM.bank.getPoolForGrade(8);
+      check('pool grade 8 non-empty', function () {
+        return poolG.length > 100 ? true : 'len=' + poolG.length;
       });
 
       var session = {
         sessionId: 'test-session',
-        grade: 11,
+        grade: 8,
         selfLevel: 'tb',
         theta: -0.3,
         standardError: 2,
@@ -156,12 +167,12 @@
         sessionStartedAt: Date.now(),
         finished: false,
         stopReason: null,
-        topicStates: AM.cat.initTopicStates(pool11, AM.topics.TOPICS, 11)
+        topicStates: AM.cat.initTopicStates(poolG, AM.topics.TOPICS, 8)
       };
-      var grade11Count = AM.topics.getTopicsByGrade(11).length;
-      check('initTopicStates covers grade-11 topics', function () {
+      var gradeCount = AM.topics.getTopicsByGrade(8).length;
+      check('initTopicStates covers grade-8 topics', function () {
         var n = Object.keys(session.topicStates).length;
-        return n === grade11Count ? true : 'n=' + n + '/' + grade11Count;
+        return n === gradeCount ? true : 'n=' + n + '/' + gradeCount;
       });
 
       // Simulate a whole CAT run: answer everything correctly.
@@ -170,7 +181,7 @@
       while (steps < 80) {
         lastStop = AM.cat.shouldStop(session);
         if (lastStop) break;
-        var picked = AM.cat.selectNextQuestionWithDebug(pool11, session);
+        var picked = AM.cat.selectNextQuestionWithDebug(poolG, session);
         if (!picked) { lastStop = 'no-more-items'; break; }
         var q = picked.chosen;
         session.responses.push({
@@ -179,7 +190,7 @@
         });
         session.shownIds.push(q.id);
         session.topicStates[q.topicId] = AM.cat.transitionTopicState(
-          session.topicStates[q.topicId], q, true, pool11, new Set(session.shownIds));
+          session.topicStates[q.topicId], q, true, poolG, new Set(session.shownIds));
         steps++;
       }
       check('CAT run terminates', function () {
@@ -188,11 +199,11 @@
       check('CAT covered every topic', function () {
         var seen = {};
         var byId = {};
-        pool11.forEach(function (q) { byId[q.id] = q; });
+        poolG.forEach(function (q) { byId[q.id] = q; });
         session.responses.forEach(function (r) { seen[byId[r.questionId].topicId] = 1; });
         var n = Object.keys(seen).length;
-        return n === grade11Count
-          ? true : 'chỉ phủ ' + n + '/' + grade11Count + ' chủ đề trong ' + steps + ' câu';
+        return n === gradeCount
+          ? true : 'chỉ phủ ' + n + '/' + gradeCount + ' chủ đề trong ' + steps + ' câu';
       });
       check('CAT no repeated question', function () {
         var s = {};
@@ -204,7 +215,7 @@
       });
 
       // --- 5. Grading ---------------------------------------------------------
-      var mcq = pool11.filter(function (q) { return q.type === 'mcq'; })[0];
+      var mcq = poolG.filter(function (q) { return q.type === 'mcq'; })[0];
       check('gradeAnswer mcq correct = 1', function () {
         var correct = mcq.options.filter(function (o) { return o.isCorrect; })[0];
         return AM.cat.gradeAnswer(mcq, correct.label) === 1 ? true : 'sai';
@@ -213,7 +224,7 @@
         var wrong = mcq.options.filter(function (o) { return !o.isCorrect; })[0];
         return AM.cat.gradeAnswer(mcq, wrong.label) === 0 ? true : 'sai';
       });
-      var tf = pool11.filter(function (q) { return q.type === 'tf'; })[0];
+      var tf = poolG.filter(function (q) { return q.type === 'tf'; })[0];
       check('gradeAnswer tf partial', function () {
         if (!tf) return true;
         var all = tf.statements.map(function (s) { return s.isTrue; });
@@ -225,12 +236,12 @@
 
       // --- 6. Profiling -------------------------------------------------------
       var profile = {
-        grade: 11, goal: 'thpt-qg', dailyMinutes: 45, deadline: null,
-        selfLevel: 'tb', weakTopicIds: ['1-KNTT-C2B5-X'],
+        grade: 8, goal: 'vao-10', dailyMinutes: 45, deadline: null,
+        selfLevel: 'tb', weakTopicIds: ['8-C1-B1'],
         createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
       };
       var est = AM.irt.estimateThetaFromSession(session.responses, function (id) {
-        var f = pool11.filter(function (q) { return q.id === id; })[0];
+        var f = poolG.filter(function (q) { return q.id === id; })[0];
         return f ? f.irt : null;
       }, {});
       session.theta = est.theta;
@@ -240,8 +251,8 @@
 
       var knowledge = null;
       check('buildKnowledgeProfile runs', function () {
-        knowledge = AM.profiling.buildKnowledgeProfile(session, profile, pool11, AM.topics.TOPICS);
-        return knowledge && knowledge.topics.length === grade11Count
+        knowledge = AM.profiling.buildKnowledgeProfile(session, profile, poolG, AM.topics.TOPICS);
+        return knowledge && knowledge.topics.length === gradeCount
           ? true : 'topics=' + (knowledge ? knowledge.topics.length : 'null');
       });
       check('mastery in [0,1]', function () {
@@ -265,13 +276,13 @@
       check('stageCounts sums to topic count', function () {
         var sum = 0;
         Object.keys(tree.stageCounts).forEach(function (k) { sum += tree.stageCounts[k]; });
-        return sum === grade11Count ? true : 'sum=' + sum;
+        return sum === gradeCount ? true : 'sum=' + sum;
       });
 
       // --- 8. Learning path ---------------------------------------------------
       var path = null;
       check('generateLearningPath runs', function () {
-        path = AM.path.generateLearningPath(profile, knowledge, pool11, learner);
+        path = AM.path.generateLearningPath(profile, knowledge, poolG, learner);
         return path ? true : 'null';
       });
       check('path days respect daily budget', function () {
@@ -330,7 +341,7 @@
       // --- 10. Practice selector ---------------------------------------------
       check('selectPracticeQuestions returns items', function () {
         var sel = AM.practiceSelector.selectPracticeQuestions(
-          pool11, '1-KNTT-C2B5-X', ['N','H'], learner, [], 12345);
+          poolG, '8-C1-B1', ['N','H'], learner, [], 12345);
         return sel.practice.length > 0 ? true : 'practice rỗng';
       });
 
@@ -338,7 +349,7 @@
       check('latex renders prompts without throwing', function () {
         var bad = 0;
         for (var i = 0; i < 200; i++) {
-          var html = AM.latex.toHtml(pool11[i].prompt);
+          var html = AM.latex.toHtml(poolG[i].prompt);
           if (typeof html !== 'string') bad++;
         }
         return bad === 0 ? true : bad + ' câu lỗi';
@@ -352,7 +363,7 @@
       check('store save/load profile', function () {
         AM.store.saveProfile(profile);
         var back = AM.store.loadProfile();
-        return back && back.grade === 11 && back.goal === 'thpt-qg' ? true : JSON.stringify(back);
+        return back && back.grade === 8 && back.goal === 'vao-10' ? true : JSON.stringify(back);
       });
       check('store timestamps recorded', function () {
         var ts = AM.store.getTimestamps();
@@ -476,6 +487,287 @@
         }
       });
 
+
+      // --- 12f. Ngân hàng bài tập tự luyện + gợi ý cá nhân hóa ---------------
+      var EX = AM.exercises.BANK.items;
+      check('exercise bank loaded (≥ 3000 bài)', function () {
+        return AM.exercises.isLoaded && EX.length >= 3000 ? true : 'len=' + EX.length;
+      });
+      check('exercises cover grades 6–9', function () {
+        var miss = [6, 7, 8, 9].filter(function (g) { return AM.exercises.forGrade(g).length < 100; });
+        return miss.length === 0 ? true : 'thiếu khối ' + miss.join(',');
+      });
+      check('exercise topic belongs to its own grade', function () {
+        for (var i = 0; i < EX.length; i++) {
+          var x = EX[i];
+          if (!x.t) { if (x.k !== 'exam' && x.k !== 'review') return 'không chủ đề: ' + x.id; continue; }
+          var t = AM.topics.getTopicById(x.t);
+          if (!t || t.grade !== x.g) return x.id + ' → ' + x.t;
+        }
+        return true;
+      });
+      check('every exercise has an image, levels N/H/V/T, keys A–D', function () {
+        for (var i = 0; i < EX.length; i++) {
+          var x = EX[i];
+          if (!x.img || !x.img.length || !/^g[6-9][ab]\/\d{4}/.test(x.img[0][0])) return 'ảnh: ' + x.id;
+          if (['N', 'H', 'V', 'T'].indexOf(x.lv) === -1) return 'mức: ' + x.id;
+          if (x.ans && !/^[A-D]$/.test(x.ans)) return 'đáp án: ' + x.id;
+        }
+        return true;
+      });
+      check('every lesson maps to a known topic', function () {
+        var bad = AM.exercises.BANK.lessons.filter(function (l) { return !AM.topics.getTopicById(l.t); });
+        return bad.length === 0 ? true : bad.map(function (l) { return l.id; }).join(',');
+      });
+
+      var exProfile = { grade: 8, goal: 'cuoi-ky', dailyMinutes: 45, weakTopicIds: [], selfLevel: 'tb' };
+      var exLearner = AM.store.loadLearnerState();
+      exLearner.bkt['8-C2-B1'] = { pL: 0.15, pT: 0.15, pG: 0.25, pS: 0.1, totalAttempts: 3 };
+      var exCtx = { profile: exProfile, learner: exLearner, knowledge: null };
+      check('recommend: weakest topic first, right levels', function () {
+        var recs = AM.exercises.recommend(exCtx);
+        if (!recs.length) return 'rỗng';
+        if (recs[0].topic.id !== '8-C2-B1') return 'đầu tiên = ' + recs[0].topic.id;
+        var lv = recs[0].levels;
+        var ok = recs[0].items.every(function (x) { return lv.indexOf(x.lv) !== -1; });
+        return lv.join('') === 'NH' && ok ? true : lv.join('') + ' / ' + recs[0].items.map(function (x) { return x.lv; }).join('');
+      });
+      check('recommend: stable within a day', function () {
+        var a = AM.exercises.recommend(exCtx).map(function (r) { return r.items.map(function (x) { return x.id; }).join(); }).join('|');
+        var b = AM.exercises.recommend(exCtx).map(function (r) { return r.items.map(function (x) { return x.id; }).join(); }).join('|');
+        return a === b ? true : 'khác nhau';
+      });
+      check('recommend: finished exercises are not suggested again', function () {
+        AM.exercises.forTopic('8-C2-B1').forEach(function (x) { exLearner.exercises[x.id] = { s: 'done', at: 1 }; });
+        var recs = AM.exercises.recommend(exCtx);
+        var leaked = recs.some(function (r) { return r.topic.id === '8-C2-B1'; });
+        exLearner.exercises = {};
+        return leaked ? 'vẫn gợi ý chủ đề đã làm hết' : true;
+      });
+      check('recommend: "chưa làm được" comes back first', function () {
+        var target = AM.exercises.forTopic('8-C2-B1')[5];
+        exLearner.exercises[target.id] = { s: 'stuck', at: 1 };
+        var recs = AM.exercises.recommend(exCtx);
+        exLearner.exercises = {};
+        return recs[0].items[0].id === target.id ? true : recs[0].items[0].id;
+      });
+      check('learner.exercises survives save/load', function () {
+        var l = AM.store.loadLearnerState();
+        l.exercises = { 'g8b-0005': { s: 'done', at: 5, a: 'D' } };
+        AM.store.saveLearnerState(l);
+        var back = AM.store.loadLearnerState();
+        AM.store.clearAll(true);
+        return back.exercises['g8b-0005'] && back.exercises['g8b-0005'].a === 'D' ? true : JSON.stringify(back.exercises);
+      });
+
+      // --- 12g. Kiểm tra đầu vào theo chương --------------------------------
+      check('diagnostic ?chapter=1 starts that chapter only', function () {
+        AM.store.saveProfile({ grade: 8, goal: 'cuoi-ky', dailyMinutes: 45, deadline: null,
+          selfLevel: 'tb', weakTopicIds: [], createdAt: new Date().toISOString() });
+        var c = AM.ui.buildContext();
+        var r = AM.views.diagnostic({ chapter: '1' }, c);
+        var text = r.node.textContent;
+        r.cleanup();
+        AM.store.clearAll(true);
+        var ch1 = AM.topics.getTopicsByGrade(8).filter(function (t) { return t.chapter === 1; })
+          .map(function (t) { return t.chapterTitle; })[0];
+        return /Chương 1/.test(text) && text.indexOf(ch1) !== -1 ? true : text.slice(0, 160);
+      });
+      check('diagnostic intro lists every chapter of the grade', function () {
+        AM.store.saveProfile({ grade: 7, goal: 'cuoi-ky', dailyMinutes: 45, deadline: null,
+          selfLevel: 'tb', weakTopicIds: [], createdAt: new Date().toISOString() });
+        var c = AM.ui.buildContext();
+        var r = AM.views.diagnostic({}, c);
+        var text = r.node.textContent;
+        r.cleanup();
+        AM.store.clearAll(true);
+        var nos = {};
+        AM.topics.getTopicsByGrade(7).forEach(function (t) { nos[t.chapter] = 1; });
+        var miss = Object.keys(nos).filter(function (n) { return text.indexOf('Chương ' + n) === -1; });
+        return miss.length === 0 ? true : 'thiếu chương ' + miss.join(',');
+      });
+      check('chapter revision changes the knowledge sessionId (path regenerates)', function () {
+        var s1 = Object.assign({}, session, { finished: true, revision: 1 });
+        var s2 = Object.assign({}, session, { finished: true, revision: 2 });
+        var k1 = AM.profiling.buildKnowledgeProfile(s1, profile, poolG, AM.topics.TOPICS);
+        var k2 = AM.profiling.buildKnowledgeProfile(s2, profile, poolG, AM.topics.TOPICS);
+        return k1.sessionId !== k2.sessionId ? true : 'trùng';
+      });
+
+
+      // --- 12h. Gia sư AI -----------------------------------------------------
+      check('tutor renderRich escapes HTML from the model', function () {
+        var h = AM.tutorUI.renderRichHtml('<img src=x onerror=alert(1)> **đậm** <scr' + 'ipt>x</scr' + 'ipt>');
+        return h.indexOf('<img') === -1 && h.indexOf('<scr' + 'ipt') === -1 && h.indexOf('<strong>đậm</strong>') !== -1
+          ? true : h;
+      });
+      check('tutor renderRich: LaTeX, lists, display math', function () {
+        var h = AM.tutorUI.renderRichHtml('1. Ta có $x^2 - 4 = 0$\n2. Nên\n$$x = \\pm 2$$\n- ý một');
+        if (!window.katex) return true; // KaTeX CDN không có thì chỉ kiểm escape
+        return /<ol>/.test(h) && /<ul>/.test(h) && (h.match(/class="katex/g) || []).length >= 2 ? true : h.slice(0, 200);
+      });
+      check('tutor prompt: hint never gives the final answer, answer key hidden', function () {
+        var b = AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'hint', context: { grade: 7, answerKey: 'B' },
+          messages: [{ role: 'user', text: 'giúp em' }], refImages: [{ mime: 'image/webp', data: 'AAAA' }] });
+        var parts = b.contents[0].parts;
+        return /grade 7/.test(b.systemInstruction.parts[0].text) &&
+          /NEVER give the final answer/.test(parts[parts.length - 1].text) &&
+          /never reveal in hint/.test(parts[1].text) && parts[0].inline_data ? true : JSON.stringify(b).slice(0, 200);
+      });
+      check('tutor prompt: solution mode asks for a similar exercise', function () {
+        var b = AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'solution', context: {}, messages: [{ role: 'user', text: 'x' }] });
+        return /\*\*Bài tương tự\*\*/.test(b.contents[0].parts[b.contents[0].parts.length - 1].text) ? true : 'thiếu';
+      });
+      checkAsync('tutor.ask streams deltas from /api/tutor', async function () {
+        var realFetch = window.fetch;
+        var enc = new TextEncoder();
+        window.fetch = async function (url, init) {
+          var body = JSON.parse(init.body);
+          if (body.mode !== 'hint' || body.imageRefs[0] !== 'g8b/0005.webp') throw new Error('body sai');
+          var chunks = ['data: {"t":"Em hãy "}\n\nda', 'ta: {"t":"xét $x$"}\n\n', 'data: {"done":true,"model":"m"}\n\n'];
+          return new Response(new ReadableStream({ start: function (c) { chunks.forEach(function (x) { c.enqueue(enc.encode(x)); }); c.close(); } }),
+            { headers: { 'content-type': 'text/event-stream' } });
+        };
+        try {
+          var got = '';
+          var r = await AM.tutor.ask({ mode: 'hint', context: {}, messages: [{ role: 'user', text: 'a' }], imageRefs: ['g8b/0005.webp'] },
+            function (d) { got += d; });
+          return got === 'Em hãy xét $x$' && r.text === got && r.model === 'm' ? true : JSON.stringify([got, r]);
+        } finally { window.fetch = realFetch; }
+      });
+      checkAsync('tutor.ask without backend and without key → no-backend error', async function () {
+        var realFetch = window.fetch;
+        window.fetch = async function () { return new Response('nf', { status: 404, headers: { 'content-type': 'text/html' } }); };
+        var saved = AM.tutor.getDevKey();
+        AM.tutor.setDevKey('');
+        try {
+          await AM.tutor.ask({ mode: 'ask', messages: [{ role: 'user', text: 'a' }] }, function () {});
+          return 'không ném lỗi';
+        } catch (e) {
+          return e.code === 'no-backend' ? true : e.message;
+        } finally { window.fetch = realFetch; AM.tutor.setDevKey(saved); }
+      });
+      checkAsync('tutor.ask shows server error message', async function () {
+        var realFetch = window.fetch;
+        window.fetch = async function () { return new Response(JSON.stringify({ error: 'Cần đăng nhập để dùng Gia sư AI.' }), { status: 401, headers: { 'content-type': 'application/json' } }); };
+        try {
+          await AM.tutor.ask({ mode: 'ask', messages: [{ role: 'user', text: 'a' }] }, function () {});
+          return 'không ném lỗi';
+        } catch (e) {
+          return /đăng nhập/.test(e.message) ? true : e.message;
+        } finally { window.fetch = realFetch; }
+      });
+
+
+      // --- 12i. Gia sư AI: vì sao sai + lộ trình AI --------------------------
+      check('explain prompt carries the student answer and asks for an error type', function () {
+        var b = AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'explain', context: { studentAnswer: 'B (sai)', answerKey: 'C' },
+          messages: [{ role: 'user', text: 'vì sao' }] });
+        var parts = b.contents[0].parts;
+        return /student_answer: B \(sai\)/.test(parts[0].text) && /Loại lỗi/.test(parts[parts.length - 1].text) ? true : 'thiếu';
+      });
+      check('sanitizeRoadmap drops unknown topics and respects the daily budget', function () {
+        var plan = AM_TUTOR_PROMPT.sanitizeRoadmap({ summary: 's', strengths: ['a'], weaknesses: ['b'], tips: ['c'],
+          weeks: [{ week: 1, focus: 'f', goal: 'g', days: [{ day: 1, tasks: [
+            { type: 'theory', topicId: '8-C1-B1', minutes: 30, detail: 'x' },
+            { type: 'exercise', topicId: '8-C1-B1', minutes: 30, detail: 'y' },
+            { type: 'practice', topicId: 'zzz', minutes: 10, detail: 'z' }] }] }] }, ['8-C1-B1'], 45);
+        var t = plan.weeks[0].days[0].tasks;
+        return t.length === 2 && t[0].minutes + t[1].minutes === 45 ? true : JSON.stringify(t);
+      });
+      check('buildRoadmapSummary: every topic of the grade, no personal data', function () {
+        var ctxR = { profile: { grade: 9, goal: 'vao-10', dailyMinutes: 60, deadline: null, weakTopicIds: [] },
+          learner: AM.store.loadLearnerState(), knowledge: null };
+        var sm = AM.tutor.buildRoadmapSummary(ctxR, 3);
+        var n = AM.topics.getTopicsByGrade(9).length;
+        var json = JSON.stringify(sm);
+        return sm.topics.length === n && sm.weeks === 3 && sm.dailyMinutes === 60 && json.indexOf('@') === -1
+          ? true : sm.topics.length + '/' + n;
+      });
+      check('AI roadmap card renders a stored plan with links to the right pages', function () {
+        var l = AM.store.loadLearnerState();
+        var c = { profile: { grade: 8, goal: 'cuoi-ky', dailyMinutes: 45 }, knowledge: { sessionId: 's1' }, learner: Object.assign({}, l, {
+          aiRoadmap: { builtAt: new Date().toISOString(), basedOn: 's0', model: 'm', done: { w1d1t0: true }, plan: {
+            summary: 'Nhận xét', strengths: ['a'], weaknesses: ['b'], tips: ['c'],
+            weeks: [{ week: 1, focus: 'Đơn thức', goal: 'g', days: [{ day: 1, tasks: [
+              { type: 'theory', topicId: '8-C1-B1', minutes: 15, detail: 'đọc' },
+              { type: 'test', topicId: '8-C3-B1', minutes: 20, detail: 'kiểm tra' }] }] }] } } }) };
+        var node = AM.aiRoadmapUI.card(c);
+        var hrefs = Array.prototype.map.call(node.querySelectorAll('a'), function (a) { return a.getAttribute('href'); });
+        var stale = /Hồ sơ năng lực đã thay đổi/.test(node.textContent);
+        return hrefs.indexOf('#/theory?topic=8-C1-B1') !== -1 && hrefs.indexOf('#/diagnostic?chapter=6') !== -1 &&
+          /1\/2 nhiệm vụ/.test(node.textContent) && stale ? true : hrefs.join(',') + ' stale=' + stale;
+      });
+      checkAsync('tutor.roadmap returns the server plan', async function () {
+        var realFetch = window.fetch;
+        window.fetch = async function (url, init) {
+          var body = JSON.parse(init.body);
+          if (body.task !== 'roadmap') throw new Error('task sai');
+          return new Response(JSON.stringify({ plan: { summary: 'ok', weeks: [] }, model: 'm' }), { headers: { 'content-type': 'application/json' } });
+        };
+        try {
+          var r = await AM.tutor.roadmap({ grade: 8, topics: [] });
+          return r.plan.summary === 'ok' ? true : JSON.stringify(r);
+        } finally { window.fetch = realFetch; }
+      });
+
+
+      check('error notebook offers "Vì sao em sai?" per wrong answer', function () {
+        var q = AM.bank.getPoolForGrade(8)[0];
+        var l = Object.assign({}, AM.store.loadLearnerState(), { errors: [{ questionId: q.id, topicId: q.topicId,
+          studentAnswer: 'A', correctAnswer: 'C', score: 0, timestamp: new Date().toISOString(), resolved: false }] });
+        var node = AM.views.errors({}, { learner: l, profile: null });
+        var real = node.node || node;
+        var btn = Array.prototype.filter.call(real.querySelectorAll('button'), function (b) { return /Vì sao em sai/.test(b.textContent); });
+        return btn.length === 1 ? true : 'số nút = ' + btn.length;
+      });
+
+
+      // --- 12j. Tiết kiệm API ------------------------------------------------
+      check('prompt "skill" is short: system instruction under 900 characters', function () {
+        var n = AM_TUTOR_PROMPT.systemInstruction({ grade: 8 }).length;
+        return n < 900 ? true : 'dài ' + n;
+      });
+      check('adaptBody: Gemini 3 → thinkingLevel by mode, default temperature', function () {
+        var hint = AM_TUTOR_PROMPT.adaptBody(AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'hint', messages: [{ role: 'user', text: 'a' }] }), 'gemini-3.8-flash');
+        var sol = AM_TUTOR_PROMPT.adaptBody(AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'solution', messages: [{ role: 'user', text: 'a' }] }), 'gemini-3.8-flash');
+        return hint.generationConfig.thinkingConfig.thinkingLevel === 'low' && sol.generationConfig.thinkingConfig.thinkingLevel === 'medium' &&
+          hint.generationConfig.temperature === undefined && hint._think === undefined ? true : JSON.stringify([hint.generationConfig, sol.generationConfig]);
+      });
+      check('images: medium resolution first turn, low on follow-ups; no solution image for hints', function () {
+        var img = { mime: 'image/webp', data: 'AA' };
+        var a = AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'hint', messages: [{ role: 'user', text: 'a' }], refImages: [img], solImages: [img] });
+        var b = AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'hint', messages: [{ role: 'user', text: 'a' }, { role: 'model', text: 'b' }, { role: 'user', text: 'c' }], refImages: [img] });
+        var n = a.contents[0].parts.filter(function (p) { return p.inline_data; }).length;
+        return a.generationConfig.mediaResolution === 'MEDIA_RESOLUTION_MEDIUM' && b.generationConfig.mediaResolution === 'MEDIA_RESOLUTION_LOW' && n === 1
+          ? true : JSON.stringify([a.generationConfig, b.generationConfig, n]);
+      });
+      check('cache key: same for students in the same level band, absent for typed questions', function () {
+        var base = { mode: 'explain', quick: true, messages: [{ role: 'user', text: 'q' }], imageRefs: ['g8b/0005.webp'] };
+        var k1 = AM_TUTOR_PROMPT.cacheKeyParts(Object.assign({ context: { studentAnswer: 'A', mastery: 0.32 } }, base));
+        var k2 = AM_TUTOR_PROMPT.cacheKeyParts(Object.assign({ context: { studentAnswer: 'A', mastery: 0.50 } }, base));
+        var k3 = AM_TUTOR_PROMPT.cacheKeyParts(Object.assign({ context: { studentAnswer: 'B', mastery: 0.50 } }, base));
+        var k4 = AM_TUTOR_PROMPT.cacheKeyParts(Object.assign({}, base, { quick: false, context: {} }));
+        return k1 && k1 === k2 && k1 !== k3 && k4 === null ? true : [k1, k2, k3, k4].join(' / ');
+      });
+      checkAsync('tutor.ask: repeated one-tap question answered from this device, no network', async function () {
+        var realFetch = window.fetch;
+        var calls = 0;
+        var enc = new TextEncoder();
+        window.fetch = async function () {
+          calls++;
+          return new Response(new ReadableStream({ start: function (c) { c.enqueue(enc.encode('data: {"t":"Gợi ý A"}\n\ndata: {"done":true}\n\n')); c.close(); } }),
+            { headers: { 'content-type': 'text/event-stream' } });
+        };
+        var req = { mode: 'hint', quick: true, context: { grade: 8, label: 'Câu 9' }, messages: [{ role: 'user', text: 'q' }], imageRefs: ['g8b/0099.webp'] };
+        try {
+          var a = await AM.tutor.ask(req, function () {});
+          var got = '';
+          var b = await AM.tutor.ask(req, function (d) { got += d; });
+          return calls === 1 && b.cached && got === 'Gợi ý A' && a.text === 'Gợi ý A' ? true : JSON.stringify([calls, b]);
+        } finally { window.fetch = realFetch; }
+      });
+
       // --- 13. Views render ---------------------------------------------------
       var ctx = AM.ui.buildContext();
       views.forEach(function (v) {
@@ -487,11 +779,24 @@
         });
       });
 
-      // --- Report -------------------------------------------------------------
-      restoreStorage();
-      lines.unshift('==== ' + pass + ' PASS / ' + fail + ' FAIL ====');
-      document.getElementById('out').textContent = lines.join('\n');
-      document.title = fail === 0 ? 'ALL PASS' : fail + ' FAIL';
+      // --- Report (sau khi chạy xong các phép kiểm bất đồng bộ) ----------------
+      (async function () {
+        for (var i = 0; i < asyncChecks.length; i++) {
+          var name = asyncChecks[i][0];
+          try {
+            var r = await asyncChecks[i][1]();
+            if (r === true || r === undefined) { pass++; lines.push('PASS  ' + name); }
+            else { fail++; lines.push('FAIL  ' + name + '  -> ' + r); }
+          } catch (e) {
+            fail++;
+            lines.push('THROW ' + name + '  -> ' + (e && e.message ? e.message : e));
+          }
+        }
+        restoreStorage();
+        lines.unshift('==== ' + pass + ' PASS / ' + fail + ' FAIL ====');
+        document.getElementById('out').textContent = lines.join('\n');
+        document.title = fail === 0 ? 'ALL PASS' : fail + ' FAIL';
+      })();
     </script>
   </body>
 </html>

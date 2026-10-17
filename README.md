@@ -6,6 +6,10 @@ Viết bằng **HTML + CSS + JavaScript thuần**. Không framework, không bund
 
 - 1 472 câu hỏi trắc nghiệm biên soạn mới, phủ 92 chủ đề Toán lớp 6, 7, 8, 9, kèm 92 mục lý thuyết. Mỗi chủ đề có câu hỏi ở bốn mức Nhận biết, Thông hiểu, Vận dụng và Vận dụng cao.
 - **Nhiệm vụ số** (`#/digital-tasks`): 9 nhiệm vụ phát triển năng lực số theo 5 biện pháp của đề án (Ví dụ 4.1 → 4.9) — kiểm chứng lời giải số, phiếu tự theo dõi, hợp tác nhóm, sản phẩm số; có mức hỗ trợ thích ứng, chấm tự động và phiếu học tập lưu trên máy
+- **Bài tập cá nhân hóa** (`#/exercises`): 3 633 bài tập lớp 6–9 tách từ 8 tài liệu PDF trong `data/`, phân loại khối → chương → chủ đề (lớp 6: 1 457 · lớp 7: 772 · lớp 8: 877 · lớp 9: 527). Gợi ý mỗi ngày theo hồ sơ năng lực + BKT; câu trắc nghiệm có đáp án được chấm ngay, bài tự luận tự đánh giá; lớp 8 tập 2 có kèm hướng dẫn giải
+- **Kiểm tra đầu vào theo từng chương**: chọn chương → CAT chỉ chạy trên các chủ đề của chương đó; kết quả các chương cộng dồn vào một hồ sơ năng lực
+- **Gia sư AI (Gemini)** (`#/tutor` và nút "Hỏi gia sư AI" ở mỗi bài tập / câu luyện tập): 5 chế độ — **Vì sao đúng / sai** (phân tích đúng đáp án em đã chọn, đoán em nghĩ sai ở đâu, ghi "Loại lỗi"; có ở bài tập trắc nghiệm, luyện tập và sổ tay lỗi sai), Gợi ý bước đầu (không lộ đáp số), Kiểm tra bài làm (gõ hoặc chụp ảnh), Lời giải chi tiết (kèm bài tương tự), Hỏi tự do; trả lời dạng luồng, hiển thị LaTeX
+- **Lộ trình do Gia sư AI xây dựng** (trang Lộ trình học): AI đọc hồ sơ năng lực, bài tập đã làm, lỗi chưa sửa rồi lập kế hoạch 1–4 tuần theo ngày, có nhận xét điểm mạnh/yếu và lý giải; mỗi nhiệm vụ dẫn thẳng tới trang lý thuyết / bài tập / luyện tập / kiểm tra chương
 - Thuật toán: IRT 3PL, CAT theo thang N→H→V→T, Bayesian Knowledge Tracing, SM-2
 - **Đăng nhập bằng Firebase Auth**, hai vai trò: học sinh và quản trị
 - Tiến trình học đồng bộ lên Firestore theo tài khoản — đăng nhập máy nào cũng thấy
@@ -209,6 +213,9 @@ Vì sao bắt buộc: tên file không kèm mã băm nội dung (dự án không
 ├── css/app.css              # Toàn bộ giao diện
 ├── data/questions.js        # 6 205 câu hỏi + lý thuyết 39 bài (~9 MB)
 ├── data/examples.js         # 9 nhiệm vụ số (Ví dụ 4.1→4.9 của chương 4 đề án)
+├── data/exercises.js        # 3 633 bài tập tự luyện lớp 6–9 (siêu dữ liệu, ~1,2 MB)
+├── data/exercises/img/      # ảnh đề + hướng dẫn giải đã cắt (.webp, ~4 200 file)
+├── tools/import-exercises/  # script tách bài tập từ PDF → xem README trong thư mục
 ├── docs/design/             # Tài liệu thiết kế (tham khảo cho báo cáo đề án)
 ├── tools/reset-accounts.js  # Xoá sạch tài khoản + dữ liệu (Firebase Admin SDK)
 └── js/
@@ -222,6 +229,7 @@ Vì sao bắt buộc: tên file không kèm mã băm nội dung (dự án không
     │   ├── sync.js          # Kéo–đẩy 4 khối dữ liệu lên Firestore
     │   ├── classroom.js     # Lớp học: tạo lớp, mã tham gia, roster, hỗ trợ
     │   ├── questionBank.js  # Truy cập ngân hàng câu hỏi
+    │   ├── exerciseBank.js  # Ngân hàng bài tập tự luyện + bộ gợi ý cá nhân hóa
     │   ├── latex.js         # Render LaTeX + bảng, qua KaTeX
     │   ├── irt.js           # IRT 3PL, ước lượng θ bằng MAP
     │   ├── cat.js           # Bộ chọn câu hỏi theo thang N→H→V→T
@@ -264,10 +272,11 @@ Khách vãng lai          Học sinh                          Giáo viên
 0. **Landing page** — khách chưa đăng nhập luôn thấy trang giới thiệu trước, không phải một ô mật khẩu trống trơn. Trang cố tình ngắn: một lời hứa, một ảnh minh hoạ kết quả, ba ý mỗi ý một dòng, ba bước. Nút "Bắt đầu miễn phí" mở thẳng chế độ đăng ký.
 1. **Đăng nhập / đăng ký** — bắt buộc để vào phần học. Khi đăng ký phải chọn vai trò **học sinh** hay **giáo viên**; vai trò không đổi được sau đó. Sau khi đăng nhập, hệ thống kéo dữ liệu của tài khoản về máy rồi mới dựng giao diện.
 1. **Onboarding** — thu thập lớp, mục tiêu, thời gian/ngày, hạn thi, tự đánh giá, chủ đề yếu.
-2. **Kiểm tra đầu vào (CAT)** — mỗi chủ đề leo thang Nhận biết → Thông hiểu → Vận dụng. Đúng thì lên mức, sai thì có một câu xác minh rồi mới kết luận. Ước lượng θ bằng IRT 3PL sau mỗi câu.
+2. **Kiểm tra đầu vào (CAT) theo từng chương** — học sinh chọn chương (gợi ý: chương đã học trên lớp). Trong chương, mỗi chủ đề leo thang Nhận biết → Thông hiểu → Vận dụng; đúng thì lên mức, sai thì có một câu xác minh rồi mới kết luận. Tối đa 6 câu/chủ đề, 25 phút/chương. θ ước lượng bằng IRT 3PL trên toàn bộ câu đã làm ở mọi chương. Kết quả cộng dồn vào một phiên duy nhất; kiểm tra lại một chương thì thay kết quả cũ của chương đó. Xong chương nào, hồ sơ năng lực, lộ trình và gợi ý bài tập cập nhật ngay (`revision` của phiên tăng → lộ trình tự dựng lại). Mở thẳng một chương: `#/diagnostic?chapter=3`.
 3. **Hồ sơ năng lực** — mastery mỗi chủ đề = `độ tin cậy × quan sát + (1 − độ tin cậy) × kỳ vọng(θ)`, kèm radar theo chương, danh sách điểm yếu, tín hiệu lỗi và cây tri thức 4 giai đoạn.
 4. **Lộ trình học** — ưu tiên theo `0.30·gap + 0.20·độ gấp + 0.20·độ mong manh + 0.15·mật độ đề thi + 0.15·tự đánh dấu yếu`, đóng gói vào từng ngày vừa quỹ thời gian, chèn ngày ôn tập.
 5. **Luyện tập** — 3 pha (khởi động → luyện → kiểm tra nhanh). Kết thúc: cập nhật BKT, lên lịch SRS, ghi sổ tay lỗi, cộng XP/streak/huy hiệu.
+5b. **Bài tập cá nhân hóa** — mỗi ngày chọn 3 chủ đề có `(mục tiêu − mastery) + 0.15·[tự đánh dấu yếu] + 0.1·[còn bài chưa làm được]` lớn nhất; trong chủ đề chọn bài đúng mức theo mastery (< 0,3 → N/H · < 0,55 → H/V · < 0,8 → V/T · còn lại T), ưu tiên làm lại bài "chưa làm được". Mỗi kết quả ghi vào `LearnerState.exercises`, cập nhật BKT của chủ đề và cộng XP. Duyệt toàn bộ kho theo chương, lọc theo mức / loại / trạng thái.
 6. **Sổ tay lỗi sai** — tự đánh dấu đã sửa khi bạn làm đúng lại chính câu đó.
 7. **Lớp học** — học sinh nhập mã lớp, hệ thống hỏi xác nhận ("Lớp 8A1 — cô Hoa. Vào lớp?") rồi mới cho vào; mã gõ nhầm mà tình cờ tồn tại sẽ không lặng lẽ đẩy học sinh vào lớp lạ. Sau khi vào lớp, học sinh gửi được yêu cầu hỗ trợ và thấy câu trả lời của giáo viên ngay tại đây. Mỗi học sinh chỉ ở một lớp: vào lớp mới thì tự rời lớp cũ.
 8. **Giáo viên** — tạo lớp (hệ thống sinh mã 6 ký tự), xem roster kèm tiến độ, sắp xếp theo "cần hỗ trợ trước" để tìm nhanh em đang vướng, trả lời yêu cầu hỗ trợ, xoá học sinh khỏi lớp hoặc xoá cả lớp. Tài khoản giáo viên không có phần học riêng — mọi route học tập đều đưa về danh sách lớp.
@@ -378,3 +387,73 @@ Vài lỗi hay gặp lúc mới thiết lập:
 | `auth/unauthorized-domain` | Chưa thêm tên miền vào Authorized domains (mục 2.4) |
 | `permission-denied` | Chưa nạp `firestore.rules` (mục 2.3) |
 | `failed-precondition` | Chưa tạo Firestore database (mục 2.2) |
+
+
+---
+
+## 11. Gia sư AI (Gemini) — cài đặt
+
+```
+functions/api/tutor.js   # Cloudflare Pages Function: giữ khóa Gemini, xác thực Firebase, dựng prompt, stream câu trả lời
+js/core/tutorPrompt.js   # Prompt sư phạm DÙNG CHUNG (máy chủ import, trình duyệt dùng ở chế độ thử)
+js/core/tutor.js         # Client: gọi /api/tutor, đọc luồng SSE
+js/views/tutor.js        # Khung hội thoại + trang #/tutor
+```
+
+**Vì sao có máy chủ:** khóa API đặt trong JavaScript thì ai mở F12 cũng lấy được. Function
+chạy cùng tên miền với web (không cần CORS), kiểm tra Firebase ID token (chữ ký RS256, `aud`,
+`iss`, hạn dùng) nên chỉ học sinh đã đăng nhập mới gọi được, giới hạn 20 câu hỏi / 5 phút / tài
+khoản, ảnh đề bài được lấy từ chính kho ảnh của site (client chỉ gửi tên file).
+
+**Cài đặt trên Cloudflare Pages:**
+
+1. Lấy khóa tại <https://aistudio.google.com/apikey>.
+2. Pages → project → **Settings → Variables and Secrets** → thêm **Secret** `GEMINI_API_KEY`.
+   Tuỳ chọn: `GEMINI_MODEL` (mặc định thử lần lượt `gemini-3.8-flash` → `gemini-3.6-flash` →
+   `gemini-3.5-flash-lite` → `gemini-2.5-flash`), `FIREBASE_PROJECT_ID` (mặc định `adaptivemath-36726`).
+3. Deploy bằng **Git** (cách B ở mục 5) hoặc `npx wrangler pages deploy .` — thư mục `functions/`
+   phải được Cloudflare biên dịch; cách kéo-thả thư mục trên dashboard có thể không chạy Functions.
+4. Kiểm tra: đăng nhập → Bài tập cá nhân hóa → "Hỏi gia sư AI" → "Gợi ý bước đầu".
+
+**Chạy thử trên máy** (`python -m http.server` không có `/api/tutor`): khung gia sư sẽ hiện ô
+"Chế độ thử" — dán khóa Gemini, khóa chỉ lưu trong `localStorage` của máy đó và trình duyệt gọi
+thẳng Gemini với cùng prompt. Chỉ dùng để thử, không dùng khi deploy.
+
+**Lộ trình AI:** `POST /api/tutor` với `{task:"roadmap", summary}` → Gemini `generateContent` có
+`responseSchema` (JSON), rồi `sanitizeRoadmap()` loại topicId lạ, kẹp số phút theo quỹ thời gian mỗi ngày.
+Chỉ gửi số liệu học tập (mastery, bài đã làm, số lỗi), không gửi tên/email. Lưu ở `LearnerState.aiRoadmap`.
+
+**Đã kiểm thử** (Gemini giả lập, vì môi trường kiểm thử không ra được Internet): 21 phép kiểm cho
+Function (token sai/hết hạn/giả chữ ký → 401, luồng bị cắt giữa chừng vẫn ghép đúng, chuyển model
+khi 404, 429, bộ lọc an toàn, ảnh không hợp lệ bị loại, giới hạn tần suất) và 11 phép trong
+`_selftest.html` (escape HTML câu trả lời, LaTeX, prompt chế độ gợi ý không lộ đáp số, đọc luồng).
+Chưa gọi Gemini thật — cần thử lại sau khi đặt khóa.
+
+### Tiết kiệm API của Gia sư AI
+
+Toàn bộ "skill" của gia sư nằm ở `js/core/tutorPrompt.js` (máy chủ import, học sinh không sửa được).
+Ước lượng token đầu vào mỗi lượt hỏi (đếm bằng bộ tách token o200k làm thước đo tương đối, ảnh theo bảng
+token của Gemini 3: mặc định 1120, MEDIUM 560, LOW 280):
+
+| Lượt hỏi | Trước | Sau | Giảm |
+|---|---|---|---|
+| Gợi ý bước đầu (lượt đầu) | ~2 830 | ~850 | ~70% |
+| Vì sao đúng / sai | ~2 950 | ~1 515 | ~49% |
+| Lời giải chi tiết | ~2 835 | ~1 440 | ~49% |
+| Hỏi tiếp (lượt 3) | ~2 990 | ~770 | ~74% |
+| Lập lộ trình (23 chủ đề) | ~2 040 | ~1 110 | ~45% |
+
+Cách làm:
+1. **Chỉ dẫn viết bằng tiếng Anh dạng skill gạch đầu dòng**, chỉ yêu cầu *trả lời* tiếng Việt — chữ Việt có dấu tốn token gấp nhiều lần.
+2. **Mức suy nghĩ theo chế độ** (`thinkingLevel`): gợi ý / hỏi đáp / vì sao sai / lộ trình = `low`, kiểm tra bài / lời giải = `medium`. Gemini 3 mặc định `high`, mà token suy nghĩ tính như token đầu ra. Gemini 2.5: `thinkingBudget` 0 / 1024. Ép mức cho mọi yêu cầu bằng biến `TUTOR_THINKING`.
+3. **Ảnh**: `mediaResolution` MEDIUM ở lượt đầu, LOW ở lượt hỏi tiếp. Ảnh hướng dẫn giải chỉ gửi ở chế độ cần đối chiếu (vì sao sai / kiểm tra / lời giải).
+4. **Thứ tự**: ảnh + chỉ dẫn hệ thống (giống nhau giữa học sinh) đặt trước, phần riêng đặt sau → hưởng *implicit cache* của Gemini.
+5. **Lịch sử**: 6 lượt gần nhất, câu trả lời cũ cắt còn 400 ký tự.
+6. **Giới hạn độ dài** theo chế độ (80–300 từ) + `maxOutputTokens` tương ứng.
+7. **Cache câu hỏi "một chạm"** (bấm chế độ, không gõ thêm, không gửi ảnh riêng): cùng bài + cùng chế độ + cùng đáp án đã chọn + cùng dải trình độ → trả lại kết quả cũ, **không gọi Gemini**. Hai tầng: trên máy học sinh (localStorage, 40 câu) và trên máy chủ dùng chung cho cả lớp (KV binding `TUTOR_CACHE` nếu có — tạo KV namespace rồi gắn vào Pages → Settings → Bindings; không có KV thì dùng Cache API của Cloudflare). Câu trả lời bị cắt dở (MAX_TOKENS) hoặc bị bộ lọc chặn không được lưu. Đổi prompt thì tăng `PROMPT_VERSION` để bỏ cache cũ.
+8. **Lộ trình**: bảng chủ đề dạng cột rút gọn; nếu hồ sơ chưa đổi và lộ trình còn mới (< 7 ngày) thì hỏi lại trước khi lập lại.
+9. Mỗi câu trả lời hiện số token đã dùng (hoặc "trả lời từ bộ nhớ đệm") để theo dõi chi phí.
+10. Model từ chối tham số tuỳ chọn (400) → tự gửi lại bản tối giản một lần thay vì báo lỗi.
+
+**Lưu ý `_headers`:** rule cũ `/data/*` gán `Content-Type: text/javascript` cho mọi file trong
+`data/`, kể cả ảnh bài tập. Đã tách thành rule riêng cho từng file `.js` và `image/webp` cho ảnh.

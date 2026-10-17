@@ -220,6 +220,7 @@
           'Mọi chủ đề đều đã đạt hoặc gần đạt mục tiêu của bạn. Hãy tiếp tục ôn tập theo lịch SRS.',
           el('a', { class: 'btn btn-primary', href: '#/profile' }, 'Xem hồ sơ'),
         ),
+        AM.aiRoadmapUI ? AM.aiRoadmapUI.card(ctx) : null,
       );
     }
 
@@ -295,6 +296,7 @@
         ui.statTile(U.formatDateVN(path.estimatedCompletionDate), 'Dự kiến hoàn thành'),
       ),
       ui.bar(totalActs > 0 ? doneActs / totalActs : 0, 'kha'),
+      AM.aiRoadmapUI ? AM.aiRoadmapUI.card(ctx) : null,
       el('div', { class: 'stack-sm' }, path.sprints.map((s) => sprintCard(s, completedSet, todayStr))),
       priorityPanel(path),
       ui.footerNote(),

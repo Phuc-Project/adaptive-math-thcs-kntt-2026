@@ -45,7 +45,36 @@
         ui.pill('Đáp án đúng: ' + entry.correctAnswer, 'green'),
       ),
       question && question.solution ? ui.solutionBlock(question) : null,
+      question ? whyWrong(entry, question) : null,
     );
+  }
+
+  /** "Vì sao em sai?" — Gia sư AI phân tích đúng lựa chọn em đã chọn ở lần sai đó. */
+  function whyWrong(entry, q) {
+    if (!AM.tutorUI) return null;
+    const topic = AM.topics.getTopicById(q.topicId);
+    const lines = [q.prompt || ''];
+    if (q.type === 'mcq') for (const o of q.options || []) lines.push(o.label + '. ' + o.content);
+    let student = entry.studentAnswer || '(bỏ trống)';
+    if (q.type === 'mcq') {
+      const opt = (q.options || []).find((o) => o.label === entry.studentAnswer);
+      if (opt) student += '. ' + opt.content;
+    }
+    return AM.tutorUI.launcher({
+      key: 'err:' + entry.questionId + ':' + entry.timestamp,
+      mode: 'explain',
+      label: 'Vì sao em sai? Hỏi gia sư AI',
+      autoAsk: { mode: 'explain' },
+      context: {
+        grade: topic ? topic.grade : null,
+        topic: topic ? topic.chapterTitle + ' — ' + topic.title : null,
+        level: q.level,
+        kind: 'Câu đã làm sai',
+        questionText: lines.join('\n'),
+        studentAnswer: student + ' (sai)',
+        answerKey: entry.correctAnswer + (q.solution ? '. Lời giải tham khảo: ' + q.solution : ''),
+      },
+    });
   }
 
   function topicGroup(topicId, entries) {

@@ -81,6 +81,8 @@
     { route: '#/profile', label: 'Hồ sơ năng lực', icon: 'insights' },
     { route: '#/learning-path', label: 'Lộ trình học', icon: 'map' },
     { route: '#/diagnostic', label: 'Kiểm tra đầu vào', icon: 'quiz' },
+    { route: '#/exercises', label: 'Bài tập cá nhân hóa', icon: 'library_books' },
+    { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy' },
     { route: '#/digital-tasks', label: 'Nhiệm vụ số', icon: 'task_alt' },
     { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'error' },
     { route: '#/classroom', label: 'Lớp học', icon: 'groups' },

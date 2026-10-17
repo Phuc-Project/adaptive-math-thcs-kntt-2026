@@ -8,7 +8,7 @@
       name="description"
       content="Nền tảng học Toán THCS lớp 6, 7, 8, 9 theo Chương trình GDPT 2018."
     />
-    <meta name="theme-color" content="#e7fff3" />
+    <meta name="theme-color" content="#084333" />
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>"
@@ -72,7 +72,7 @@
       crossorigin="anonymous"
     />
 
-    <link rel="stylesheet" href="css/app.css?v=9" />
+    <link rel="stylesheet" href="css/app.css?v=13" />
   </head>
 
   <body>
@@ -80,7 +80,7 @@
 
     <!-- Must load first: it records errors from every script that follows and
          shows a diagnostic screen if the app never manages to render. -->
-    <script src="js/boot-guard.js?v=9"></script>
+    <script src="js/boot-guard.js?v=12"></script>
 
     <script
       src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
@@ -97,48 +97,57 @@
 
     <!-- Question bank: a plain .js file (not .json) so the bank also loads when
          the page is opened directly from disk, where fetch() is blocked. -->
-    <script src="data/questions.js?v=9"></script>
-    <script src="data/examples.js?v=9"></script>
+    <script src="data/questions.js?v=12"></script>
+    <script src="data/examples.js?v=12"></script>
+    <!-- Bài tập tự luyện lớp 6–9 (ảnh đề trong data/exercises/img/) -->
+    <script src="data/exercises.js?v=12"></script>
 
     <!-- Core: pure logic, ported from the TypeScript sources -->
-    <script src="js/core/util.js?v=9"></script>
-    <script src="js/core/constants.js?v=9"></script>
-    <script src="js/core/topics.js?v=9"></script>
-    <script src="js/core/store.js?v=9"></script>
-    <script src="js/core/firebaseClient.js?v=9"></script>
-    <script src="js/core/auth.js?v=9"></script>
-    <script src="js/core/sync.js?v=9"></script>
-    <script src="js/core/classroom.js?v=9"></script>
-    <script src="js/core/questionBank.js?v=9"></script>
-    <script src="js/core/latex.js?v=9"></script>
-    <script src="js/core/irt.js?v=9"></script>
-    <script src="js/core/cat.js?v=9"></script>
-    <script src="js/core/bkt.js?v=9"></script>
-    <script src="js/core/srs.js?v=9"></script>
-    <script src="js/core/adaptiveEngine.js?v=9"></script>
-    <script src="js/core/profiling.js?v=9"></script>
-    <script src="js/core/treeStability.js?v=9"></script>
-    <script src="js/core/practiceSelector.js?v=9"></script>
-    <script src="js/core/pathGenerator.js?v=9"></script>
-    <script src="js/core/todayActivities.js?v=9"></script>
+    <script src="js/core/util.js?v=12"></script>
+    <script src="js/core/constants.js?v=12"></script>
+    <script src="js/core/topics.js?v=12"></script>
+    <script src="js/core/store.js?v=12"></script>
+    <script src="js/core/firebaseClient.js?v=12"></script>
+    <script src="js/core/auth.js?v=12"></script>
+    <script src="js/core/sync.js?v=12"></script>
+    <script src="js/core/classroom.js?v=12"></script>
+    <script src="js/core/questionBank.js?v=12"></script>
+    <script src="js/core/exerciseBank.js?v=12"></script>
+    <!-- Gia sư AI: prompt dùng chung với functions/api/tutor.js -->
+    <script src="js/core/tutorPrompt.js?v=12"></script>
+    <script src="js/core/tutor.js?v=12"></script>
+    <script src="js/core/latex.js?v=12"></script>
+    <script src="js/core/irt.js?v=12"></script>
+    <script src="js/core/cat.js?v=12"></script>
+    <script src="js/core/bkt.js?v=12"></script>
+    <script src="js/core/srs.js?v=12"></script>
+    <script src="js/core/adaptiveEngine.js?v=12"></script>
+    <script src="js/core/profiling.js?v=12"></script>
+    <script src="js/core/treeStability.js?v=12"></script>
+    <script src="js/core/practiceSelector.js?v=12"></script>
+    <script src="js/core/pathGenerator.js?v=12"></script>
+    <script src="js/core/todayActivities.js?v=12"></script>
 
     <!-- UI -->
-    <script src="js/components.js?v=9"></script>
-    <script src="js/views/landing.js?v=9"></script>
-    <script src="js/views/login.js?v=9"></script>
-    <script src="js/views/admin.js?v=9"></script>
-    <script src="js/views/teacher.js?v=9"></script>
-    <script src="js/views/classroom.js?v=9"></script>
-    <script src="js/views/home.js?v=9"></script>
-    <script src="js/views/onboarding.js?v=9"></script>
-    <script src="js/views/diagnostic.js?v=9"></script>
-    <script src="js/views/profile.js?v=9"></script>
-    <script src="js/views/learningPath.js?v=9"></script>
-    <script src="js/views/theory.js?v=9"></script>
-    <script src="js/views/practice.js?v=9"></script>
-    <script src="js/views/errors.js?v=9"></script>
-    <script src="js/views/examples.js?v=9"></script>
-    <script src="js/router.js?v=9"></script>
-    <script src="js/app.js?v=9"></script>
+    <script src="js/components.js?v=12"></script>
+    <script src="js/views/landing.js?v=12"></script>
+    <script src="js/views/login.js?v=12"></script>
+    <script src="js/views/admin.js?v=12"></script>
+    <script src="js/views/teacher.js?v=12"></script>
+    <script src="js/views/classroom.js?v=12"></script>
+    <script src="js/views/home.js?v=12"></script>
+    <script src="js/views/onboarding.js?v=12"></script>
+    <script src="js/views/diagnostic.js?v=12"></script>
+    <script src="js/views/profile.js?v=12"></script>
+    <script src="js/views/learningPath.js?v=12"></script>
+    <script src="js/views/theory.js?v=12"></script>
+    <script src="js/views/practice.js?v=12"></script>
+    <script src="js/views/tutor.js?v=12"></script>
+    <script src="js/views/aiRoadmap.js?v=12"></script>
+    <script src="js/views/exercises.js?v=12"></script>
+    <script src="js/views/errors.js?v=12"></script>
+    <script src="js/views/examples.js?v=12"></script>
+    <script src="js/router.js?v=12"></script>
+    <script src="js/app.js?v=12"></script>
   </body>
 </html>
