@@ -1,0 +1,11 @@
+.git
+.github
+.claude
+.vscode
+.idea
+.wrangler
+data/*.pdf
+data/*.mojibake-backup
+tools/
+docs/
+*.log
