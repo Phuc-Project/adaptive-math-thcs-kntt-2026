@@ -19,13 +19,12 @@
   'use strict';
 
   const FIREBASE_CONFIG = {
-    apiKey: 'AIzaSyDRnPMzWOboBIMvMK0nQu6OVc--6c8b2Rs',
-    authDomain: 'adaptivemath-36726.firebaseapp.com',
-    projectId: 'adaptivemath-36726',
-    storageBucket: 'adaptivemath-36726.firebasestorage.app',
-    messagingSenderId: '726415919784',
-    appId: '1:726415919784:web:d1798259e74eb1edcfd09d',
-    measurementId: 'G-9YVKBYYM45',
+    apiKey: 'AIzaSyDSkNdcpVV1y-M-M5p2-I6EkGmG5DF51vI',
+    authDomain: 'adaptivemath-tmhp-2026.firebaseapp.com',
+    projectId: 'adaptivemath-tmhp-2026',
+    storageBucket: 'adaptivemath-tmhp-2026.firebasestorage.app',
+    messagingSenderId: '13769177624',
+    appId: '1:13769177624:web:8a740423c7aa2d46ff616d',
   };
 
   /** Firestore collection / document names, in one place. */
