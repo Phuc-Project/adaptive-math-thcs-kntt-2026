@@ -11,6 +11,8 @@ desktop.ini
 *.swp
 .claude/
 .vercel/
+.env
+.env*
 
 # Logs
 *.log
