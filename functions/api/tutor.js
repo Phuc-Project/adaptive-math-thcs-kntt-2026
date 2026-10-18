@@ -11,7 +11,7 @@
  *   GEMINI_MODEL        (tuỳ chọn) — mặc định thử lần lượt MODEL_FALLBACKS
  *   TUTOR_THINKING      (tuỳ chọn) — ép mức suy nghĩ cho mọi yêu cầu: minimal|low|medium|high
  *   TUTOR_CACHE         (tuỳ chọn, binding KV) — cache câu trả lời dùng chung, bền 30 ngày
- *   FIREBASE_PROJECT_ID (tuỳ chọn) — mặc định adaptivemath-36726
+ *   FIREBASE_PROJECT_ID (tuỳ chọn) — mặc định adaptivemath-tmhp-2026
  *   TUTOR_REQUIRE_AUTH  (tuỳ chọn) — "0" để tắt xác thực khi thử nghiệm
  *
  * Hai tác vụ:
@@ -82,8 +82,11 @@ export async function verifyFirebaseToken(token, projectId, fetchImpl = fetch) {
   if (header.alg !== 'RS256') throw new Error('token-alg');
 
   const now = Math.floor(Date.now() / 1000);
-  if (payload.aud !== projectId) throw new Error('token-aud');
-  if (payload.iss !== 'https://securetoken.google.com/' + projectId) throw new Error('token-iss');
+  const allowed = Array.isArray(projectId)
+    ? projectId
+    : [projectId, 'adaptivemath-tmhp-2026', 'adaptivemath-36726'].filter(Boolean);
+  if (!allowed.includes(payload.aud)) throw new Error('token-aud');
+  if (!allowed.some((pid) => payload.iss === 'https://securetoken.google.com/' + pid)) throw new Error('token-iss');
   if (!payload.sub || typeof payload.sub !== 'string') throw new Error('token-sub');
   if (!(payload.exp > now)) throw new Error('token-expired');
   if (payload.iat > now + 300) throw new Error('token-iat');
@@ -352,9 +355,14 @@ export async function handleTutor(request, env, fetchImpl = fetch, waitUntil = n
     const auth = request.headers.get('Authorization') || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
     try {
+      const allowedProjects = [
+        env.FIREBASE_PROJECT_ID,
+        'adaptivemath-tmhp-2026',
+        'adaptivemath-36726',
+      ].filter(Boolean);
       const claims = await verifyFirebaseToken(
         token,
-        env.FIREBASE_PROJECT_ID || 'adaptivemath-36726',
+        allowedProjects,
         fetchImpl,
       );
       uid = claims.sub;

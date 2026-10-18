@@ -37,8 +37,11 @@
   async function idToken() {
     try {
       const auth = AM.fb && typeof AM.fb.auth === 'function' ? AM.fb.auth() : null;
-      const user = auth && auth.currentUser;
-      return user ? await user.getIdToken() : null;
+      let user = auth && auth.currentUser;
+      if (!user && AM.auth && typeof AM.auth.currentUser === 'function') {
+        user = AM.auth.currentUser();
+      }
+      return user && typeof user.getIdToken === 'function' ? await user.getIdToken() : null;
     } catch (e) {
       return null;
     }

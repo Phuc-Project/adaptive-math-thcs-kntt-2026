@@ -32,7 +32,7 @@ Rồi mở `http://localhost:8080`. `localhost` đã nằm sẵn trong danh sác
 
 ## 2. Thiết lập Firebase (làm một lần)
 
-Project mặc định: **`adaptivemath-36726`** (khai báo trong `.firebaserc`, cấu hình nằm trong `js/core/firebaseClient.js`).
+Project mặc định: **`adaptivemath-tmhp-2026`** (khai báo trong `.firebaserc`, cấu hình nằm trong `js/core/firebaseClient.js`).
 
 ### 2.1. Bật đăng nhập Email/Password
 
@@ -410,7 +410,7 @@ khoản, ảnh đề bài được lấy từ chính kho ảnh của site (clien
 1. Lấy khóa tại <https://aistudio.google.com/apikey>.
 2. Pages → project → **Settings → Variables and Secrets** → thêm **Secret** `GEMINI_API_KEY`.
    Tuỳ chọn: `GEMINI_MODEL` (mặc định thử lần lượt `gemini-3.8-flash` → `gemini-3.6-flash` →
-   `gemini-3.5-flash-lite` → `gemini-2.5-flash`), `FIREBASE_PROJECT_ID` (mặc định `adaptivemath-36726`).
+   `gemini-3.5-flash-lite` → `gemini-2.5-flash`), `FIREBASE_PROJECT_ID` (mặc định `adaptivemath-tmhp-2026`).
 3. Deploy bằng **Git** (cách B ở mục 5) hoặc `npx wrangler pages deploy .` — thư mục `functions/`
    phải được Cloudflare biên dịch; cách kéo-thả thư mục trên dashboard có thể không chạy Functions.
 4. Kiểm tra: đăng nhập → Bài tập cá nhân hóa → "Hỏi gia sư AI" → "Gợi ý bước đầu".
