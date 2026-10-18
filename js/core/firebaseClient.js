@@ -111,6 +111,11 @@
         return 'Mất kết nối mạng. Kiểm tra internet rồi thử lại.';
       case 'auth/user-disabled':
         return 'Tài khoản này đã bị vô hiệu hoá.';
+      case 'auth/popup-closed-by-user':
+      case 'auth/cancelled-popup-request':
+        return 'Cửa sổ đăng nhập Google đã bị đóng trước khi hoàn tất.';
+      case 'auth/popup-blocked':
+        return 'Trình duyệt đã chặn cửa sổ pop-up. Hãy cho phép mở pop-up để đăng nhập bằng Google.';
       case 'auth/unauthorized-domain':
         return (
           'Tên miền hiện tại chưa được Firebase cho phép. Nếu bạn đang mở file ' +

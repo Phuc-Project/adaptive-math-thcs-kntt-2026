@@ -346,6 +346,21 @@
     return cred.user;
   }
 
+  async function signInWithGoogle(desiredRole) {
+    if (!fb.isReady()) throw new Error(fb.initError() || 'Firebase chưa sẵn sàng.');
+    const provider = new window.firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    if (desiredRole && SELECTABLE_ROLES.indexOf(desiredRole) !== -1) {
+      pendingRegistration = {
+        uid: null,
+        displayName: '',
+        role: desiredRole,
+      };
+    }
+    const cred = await fb.auth().signInWithPopup(provider);
+    return cred.user;
+  }
+
   async function resetPassword(email) {
     if (!fb.isReady()) throw new Error(fb.initError() || 'Firebase chưa sẵn sàng.');
     await fb.auth().sendPasswordResetEmail(email.trim());
@@ -501,6 +516,7 @@
     displayName: displayName,
     register: register,
     signIn: signIn,
+    signInWithGoogle: signInWithGoogle,
     signOut: signOut,
     resetPassword: resetPassword,
     updateSummary: updateSummary,

@@ -81,6 +81,33 @@
       }
     }
 
+    async function submitGoogle() {
+      form.error = null;
+      form.notice = null;
+      form.busy = true;
+      render();
+      try {
+        await AM.auth.signInWithGoogle(form.mode === 'signup' ? form.role : null);
+        return;
+      } catch (err) {
+        if (err && (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request')) {
+          // Closed by user, no error
+        } else {
+          form.error = AM.fb.describeError(err);
+        }
+      } finally {
+        form.busy = false;
+        render();
+      }
+    }
+
+    function googleIconSvg() {
+      return el('span', {
+        html: '<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle;"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/><path d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>',
+        style: { display: 'inline-flex', alignItems: 'center' }
+      });
+    }
+
     function field(label, type, key, placeholder, autocomplete) {
       const input = el('input', {
         class: 'field',
@@ -182,6 +209,67 @@
         form.notice ? ui.banner('info', form.notice) : null,
 
         isSignup ? rolePicker() : null,
+
+        !isReset
+          ? el(
+              'button',
+              {
+                type: 'button',
+                class: 'btn btn-outline btn-block btn-google',
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  fontWeight: '600',
+                  padding: '10px 16px',
+                  borderRadius: '12px',
+                  borderColor: '#cbd5e1',
+                  background: '#ffffff',
+                  color: '#1e293b',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  marginTop: '0.5rem',
+                  marginBottom: '0.5rem',
+                },
+                disabled: form.busy || !AM.fb.isReady(),
+                onclick: submitGoogle,
+              },
+              googleIconSvg(),
+              el(
+                'span',
+                {},
+                form.busy
+                  ? 'Đang kết nối Google…'
+                  : isSignup
+                    ? 'Đăng ký nhanh bằng Google'
+                    : 'Đăng nhập với Google',
+              ),
+            )
+          : null,
+
+        !isReset
+          ? el(
+              'div',
+              {
+                style: {
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  margin: '0.5rem 0 1rem',
+                  color: '#94a3b8',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.8px',
+                },
+              },
+              el('div', { style: { height: '1px', background: '#e2e8f0', flex: '1' } }),
+              el('span', {}, 'Hoặc bằng Email'),
+              el('div', { style: { height: '1px', background: '#e2e8f0', flex: '1' } }),
+            )
+          : null,
+
         isSignup ? field('Họ tên', 'text', 'name', 'Nguyễn Văn A', 'name') : null,
         field('Email', 'email', 'email', 'ban@example.com', 'email'),
         isReset
