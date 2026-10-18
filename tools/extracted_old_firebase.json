@@ -1,0 +1,184 @@
+{
+  "student_user": {
+    "name": "projects/adaptivemath-36726/databases/(default)/documents/users/RXvGK0FhYCYVKkQSDEK7wXjr8KI3",
+    "fields": {
+      "level": {
+        "integerValue": "0"
+      },
+      "dailyMinutes": {
+        "integerValue": "45"
+      },
+      "email": {
+        "stringValue": "student_demo2026@gmail.com"
+      },
+      "totalSessions": {
+        "integerValue": "0"
+      },
+      "createdAt": {
+        "timestampValue": "2026-10-17T22:18:17.956Z"
+      },
+      "hasDiagnostic": {
+        "booleanValue": false
+      },
+      "xp": {
+        "integerValue": "0"
+      },
+      "lastLoginAt": {
+        "timestampValue": "2026-10-17T22:52:53.134Z"
+      },
+      "totalQuestions": {
+        "integerValue": "0"
+      },
+      "goal": {
+        "stringValue": "vao-10"
+      },
+      "currentStreak": {
+        "integerValue": "0"
+      },
+      "unresolvedErrors": {
+        "integerValue": "0"
+      },
+      "grade": {
+        "integerValue": "9"
+      },
+      "longestStreak": {
+        "integerValue": "0"
+      },
+      "className": {
+        "nullValue": null
+      },
+      "displayName": {
+        "stringValue": "Nguyễn Minh Quân (Học sinh)"
+      },
+      "lastActiveAt": {
+        "timestampValue": "2026-10-17T22:32:09.768Z"
+      },
+      "masteredTopics": {
+        "integerValue": "0"
+      },
+      "classCode": {
+        "nullValue": null
+      },
+      "role": {
+        "stringValue": "student"
+      }
+    },
+    "createTime": "2026-10-17T22:18:18.032819Z",
+    "updateTime": "2026-10-17T22:52:53.176781Z"
+  },
+  "student_learner_data": {
+    "documents": [
+      {
+        "name": "projects/adaptivemath-36726/databases/(default)/documents/learners/RXvGK0FhYCYVKkQSDEK7wXjr8KI3/data/profile",
+        "fields": {
+          "json": {
+            "stringValue": "{\"grade\":9,\"goal\":\"vao-10\",\"dailyMinutes\":45,\"deadline\":null,\"selfLevel\":\"kha\",\"weakTopicIds\":[],\"createdAt\":\"2026-10-17T22:32:06.020Z\",\"updatedAt\":\"2026-10-17T22:32:06.020Z\"}"
+          },
+          "updatedAt": {
+            "integerValue": "1792276326020"
+          }
+        },
+        "createTime": "2026-10-17T22:32:09.458334Z",
+        "updateTime": "2026-10-17T22:32:09.458334Z"
+      }
+    ]
+  },
+  "teacher_user": {
+    "name": "projects/adaptivemath-36726/databases/(default)/documents/users/oGCHdD2DfPXCRVH3hF63cb98PTw2",
+    "fields": {
+      "email": {
+        "stringValue": "giaovien_toan9_2026@gmail.com"
+      },
+      "currentStreak": {
+        "integerValue": "0"
+      },
+      "masteredTopics": {
+        "integerValue": "0"
+      },
+      "goal": {
+        "nullValue": null
+      },
+      "displayName": {
+        "stringValue": "Thầy Hoàng Phúc (Giáo viên)"
+      },
+      "role": {
+        "stringValue": "teacher"
+      },
+      "xp": {
+        "integerValue": "0"
+      },
+      "lastLoginAt": {
+        "timestampValue": "2026-10-17T22:33:29.237Z"
+      },
+      "totalQuestions": {
+        "integerValue": "0"
+      },
+      "className": {
+        "nullValue": null
+      },
+      "createdAt": {
+        "timestampValue": "2026-10-17T22:24:22.716Z"
+      },
+      "level": {
+        "integerValue": "0"
+      },
+      "grade": {
+        "nullValue": null
+      },
+      "classCode": {
+        "nullValue": null
+      },
+      "hasDiagnostic": {
+        "booleanValue": false
+      }
+    },
+    "createTime": "2026-10-17T22:24:23.010121Z",
+    "updateTime": "2026-10-17T22:33:29.275280Z"
+  },
+  "teacher_classes": [
+    {
+      "document": {
+        "name": "projects/adaptivemath-36726/databases/(default)/documents/classes/2BQTEV",
+        "fields": {
+          "name": {
+            "stringValue": "Toán 9A - THCS Kết Nối Tri Thức 2026"
+          },
+          "teacherId": {
+            "stringValue": "oGCHdD2DfPXCRVH3hF63cb98PTw2"
+          },
+          "teacherName": {
+            "stringValue": "Thầy Hoàng Phúc (Giáo viên)"
+          },
+          "createdAt": {
+            "timestampValue": "2026-10-17T22:27:38.770Z"
+          }
+        },
+        "createTime": "2026-10-17T22:27:38.946061Z",
+        "updateTime": "2026-10-17T22:27:38.946061Z"
+      },
+      "readTime": "2026-10-18T02:00:55.739476Z"
+    },
+    {
+      "document": {
+        "name": "projects/adaptivemath-36726/databases/(default)/documents/classes/WT5783",
+        "fields": {
+          "name": {
+            "stringValue": "Toán 9A - THCS Kết Nối Tri Thức 2026"
+          },
+          "teacherId": {
+            "stringValue": "oGCHdD2DfPXCRVH3hF63cb98PTw2"
+          },
+          "teacherName": {
+            "stringValue": "Thầy Hoàng Phúc (Giáo viên)"
+          },
+          "createdAt": {
+            "timestampValue": "2026-10-17T22:33:36.205Z"
+          }
+        },
+        "createTime": "2026-10-17T22:33:36.260792Z",
+        "updateTime": "2026-10-17T22:33:36.260792Z"
+      },
+      "readTime": "2026-10-18T02:00:55.739476Z"
+    }
+  ]
+}
