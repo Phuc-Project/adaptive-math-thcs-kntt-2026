@@ -1,7 +1,7 @@
 # Bộ tách bài tập tự luyện từ PDF (2026-10-17)
 
 Sinh `data/exercises.js` + ảnh đề `data/exercises/img/<file>/<số>.webp` từ 8 tài liệu
-PDF trong `data/` (lớp 6, 7, 8, 9 — mỗi khối hai tập/học kì).
+PDF trong `data/pdf/` (lớp 6, 7, 8, 9 — mỗi khối hai tập/học kì).
 
 | Mã  | Tài liệu                                   | Khối |
 |-----|--------------------------------------------|------|
@@ -25,7 +25,7 @@ thành ảnh đúng vùng đề trong trang gốc — giữ nguyên công thức
 
 ```bash
 WORK=~/work                                   # các script đọc/ghi trong ~/work
-cp "data/<tên>.pdf" $WORK/g6a.pdf ...         # đặt tên theo bảng trên
+cp "data/pdf/<tên>.pdf" $WORK/g6a.pdf ...         # đặt tên theo bảng trên
 pdftotext -bbox-layout $WORK/g6a.pdf $WORK/bbox/g6a.html
 python3 rows.py $WORK/bbox/g6a.html $WORK/rows/g6a.json   # gom từ → dòng hiển thị
 pdftoppm -r 144 -png $WORK/g6a.pdf $WORK/pages/g6a/p      # dựng trang 144 dpi
@@ -55,3 +55,23 @@ python3 build_js.py            # ghi data/exercises.js
 - Hình vẽ đặt lệch sang cạnh bài trước/sau trong tài liệu gốc đôi khi bị cắt sang bài bên cạnh.
 - Bài tập có câu "Xem Hình 2" mà hình nằm ở phần lý thuyết sẽ không kèm hình.
 - Chỉ g8b có đáp án/hướng dẫn giải; các khối khác học sinh tự đánh giá "Làm được / Chưa làm được".
+
+## Đề kiểm tra: tách từng câu (`split_exams.py`, 2026-10-18)
+
+`build_js.py` để mỗi đề kiểm tra là một ảnh nguyên đề. `split_exams.py` chạy **sau** nó
+(Windows hoặc Linux, chỉ cần PyMuPDF + Pillow + numpy, đọc thẳng PDF trong `data/pdf/`):
+
+```bash
+python tools/import-exercises/split_exams.py
+```
+
+- Tách 11 đề trong g6a: 6 đề giữa HK I (tr. 75–83) và 5 đề cuối HK I (tr. 109–119), danh sách
+  trang ở `EXAMS`. Mỗi câu trắc nghiệm / đúng-sai / tự luận thành một bài riêng, ảnh ở
+  `data/exercises/img/g6a/de/`, kèm `ex` (mã đề), `p` (phần), `pt` (điểm) và chủ đề `t`
+  (luật từ khóa `TOPIC_RULES` + `TOPIC_OVERRIDES` đã soát tay). Ngân hàng có thêm mảng `exams`.
+- Nền trang (watermark tên GV + SĐT) được thay bằng nền trắng trước khi render.
+- Bảng Đúng/Sai có sẵn dấu X ở ô đáp án → đọc thành `key` ("a) Sai · b) Đúng …") rồi xóa X
+  khỏi ảnh đề. Các đề còn lại không có đáp án trong tài liệu.
+- Xử lý lỗi dàn trang của tài liệu gốc: nhãn "Câu N" bị dòng khác in đè, mẫu số thòng xuống
+  dòng câu sau, hình vẽ bên phải vắt qua ranh giới hai câu (câu nhắc "như hình vẽ" nhận hình).
+- Chạy lại nhiều lần cho cùng kết quả; các bài khác trong `exercises.js` giữ nguyên.

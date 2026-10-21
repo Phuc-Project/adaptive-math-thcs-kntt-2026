@@ -4,7 +4,7 @@
 .vscode
 .idea
 .wrangler
-data/*.pdf
+data/pdf/
 data/*.mojibake-backup
 tools/
 docs/

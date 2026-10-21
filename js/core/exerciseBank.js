@@ -7,6 +7,10 @@
  * (trắc nghiệm / tự luận / bài tập mẫu / ôn tập chương / đề kiểm tra), mức gợi ý
  * N/H/V/T, và với tài liệu có đáp án: đáp án trắc nghiệm + ảnh hướng dẫn giải.
  *
+ * Đề kiểm tra (tools/import-exercises/split_exams.py) được tách thành từng câu:
+ * mỗi câu là bài trắc nghiệm / tự luận bình thường (có chủ đề) kèm `ex` = mã đề
+ * trong RAW.exams, `p` = phần ('tn' | 'tl'), `pt` = điểm, `key` = đáp án dạng chữ.
+ *
  * Phần gợi ý là hàm thuần (không đụng DOM, không I/O):
  *   mastery(topic) = BKT pL nếu đã luyện, nếu không thì mastery từ hồ sơ năng lực
  *   priority       = (target − mastery) + 0.15·[tự đánh dấu yếu] + 0.1·[còn bài "chưa làm được"]
@@ -21,6 +25,7 @@
     window.AM_EXERCISE_BANK && Array.isArray(window.AM_EXERCISE_BANK.items)
       ? window.AM_EXERCISE_BANK
       : { imgBase: 'data/exercises/img/', sources: [], lessons: [], items: [] };
+  if (!Array.isArray(RAW.exams)) RAW.exams = [];
 
   if (RAW.items.length === 0) {
     console.warn('[exercises] Không nạp được data/exercises.js — trang Bài tập sẽ trống.');
@@ -39,7 +44,15 @@
     stuck: 'Chưa làm được',
   };
 
+  const EXAM_TYPE_LABELS = {
+    GK1: 'Đề kiểm tra giữa học kì I',
+    CK1: 'Đề kiểm tra cuối học kì I',
+    GK2: 'Đề kiểm tra giữa học kì II',
+    CK2: 'Đề kiểm tra cuối học kì II',
+  };
+
   const LESSON_BY_ID = new Map(RAW.lessons.map((l) => [l.id, l]));
+  const EXAM_BY_ID = new Map(RAW.exams.map((e) => [e.id, e]));
   const BY_ID = new Map(RAW.items.map((x) => [x.id, x]));
 
   // Index once: grade → topicId → items (giữ thứ tự xuất hiện trong tài liệu).
@@ -84,9 +97,26 @@
     return idx !== null && idx !== undefined ? RAW.sources[idx] || '' : '';
   }
 
-  /** Đề kiểm tra / ôn tập chương: không gắn chủ đề cụ thể. */
+  /** Ôn tập chương + đề kiểm tra nguyên khối (chưa tách câu): không gắn chủ đề cụ thể. */
   function extrasForGrade(grade) {
-    return forGrade(grade).filter((x) => x.k === 'exam' || x.k === 'review');
+    return forGrade(grade).filter((x) => (x.k === 'exam' || x.k === 'review') && !x.ex);
+  }
+
+  function exam(id) {
+    return EXAM_BY_ID.get(id) || null;
+  }
+
+  /** Đề đã tách câu của một khối: [{ exam, items }] theo thứ tự trong tài liệu. */
+  function examsForGrade(grade) {
+    const groups = new Map();
+    for (const e of RAW.exams) if (e.g === grade) groups.set(e.id, { exam: e, items: [] });
+    for (const x of forGrade(grade)) if (x.ex && groups.has(x.ex)) groups.get(x.ex).items.push(x);
+    return Array.from(groups.values()).filter((g) => g.items.length > 0);
+  }
+
+  /** "Đề kiểm tra giữa học kì I · Đề 2" */
+  function examTitle(e) {
+    return (EXAM_TYPE_LABELS[e.type] || e.title) + ' · Đề ' + e.no;
   }
 
   // -------------------------------------------------------------------------
@@ -197,11 +227,15 @@
     isLoaded: RAW.items.length > 0,
     KIND_LABELS: KIND_LABELS,
     STATUS_LABELS: STATUS_LABELS,
+    EXAM_TYPE_LABELS: EXAM_TYPE_LABELS,
     imgUrl: imgUrl,
     forGrade: forGrade,
     forTopic: forTopic,
     countForTopic: countForTopic,
     extrasForGrade: extrasForGrade,
+    exam: exam,
+    examsForGrade: examsForGrade,
+    examTitle: examTitle,
     getById: getById,
     lesson: lesson,
     sourceName: sourceName,

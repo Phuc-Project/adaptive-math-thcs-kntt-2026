@@ -509,11 +509,26 @@
       check('every exercise has an image, levels N/H/V/T, keys A–D', function () {
         for (var i = 0; i < EX.length; i++) {
           var x = EX[i];
-          if (!x.img || !x.img.length || !/^g[6-9][ab]\/\d{4}/.test(x.img[0][0])) return 'ảnh: ' + x.id;
+          if (!x.img || !x.img.length || !/^g[6-9][ab]\/(\d{4}|de\/)/.test(x.img[0][0])) return 'ảnh: ' + x.id;
           if (['N', 'H', 'V', 'T'].indexOf(x.lv) === -1) return 'mức: ' + x.id;
           if (x.ans && !/^[A-D]$/.test(x.ans)) return 'đáp án: ' + x.id;
         }
         return true;
+      });
+      check('exam questions: known exam, part tn/tl, every exam has both parts', function () {
+        var seen = {};
+        for (var i = 0; i < EX.length; i++) {
+          var x = EX[i];
+          if (!x.ex) continue;
+          var e = AM.exercises.exam(x.ex);
+          if (!e || e.g !== x.g) return 'đề: ' + x.id;
+          if (x.p !== 'tn' && x.p !== 'tl') return 'phần: ' + x.id;
+          seen[x.ex] = (seen[x.ex] || '') + x.p;
+        }
+        var exams = AM.exercises.BANK.exams;
+        if (!exams.length) return 'chưa có đề';
+        var bad = exams.filter(function (e) { var s = seen[e.id] || ''; return s.indexOf('tn') === -1 || s.indexOf('tl') === -1; });
+        return bad.length === 0 ? true : bad.map(function (e) { return e.id; }).join(',');
       });
       check('every lesson maps to a known topic', function () {
         var bad = AM.exercises.BANK.lessons.filter(function (l) { return !AM.topics.getTopicById(l.t); });

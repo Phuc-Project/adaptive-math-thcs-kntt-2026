@@ -5,7 +5,8 @@
  *      hồ sơ năng lực + BKT), rồi chọn bài đúng mức N/H/V/T phù hợp mastery.
  *   2. "Kho bài tập theo chương": duyệt toàn bộ bài của khối, lọc theo mức,
  *      loại bài và trạng thái.
- *   3. "Ôn tập chương & đề kiểm tra".
+ *   3. "Ôn tập chương & đề kiểm tra": đề giữa kì / cuối kì, mỗi đề chia
+ *      Phần I Trắc nghiệm và Phần II Tự luận, từng câu làm và chấm riêng.
  *
  * Mỗi lần học sinh tự đánh giá "Làm được / Chưa làm được" (hoặc chọn đáp án
  * với câu trắc nghiệm có khóa), kết quả được ghi vào LearnerState.exercises,
@@ -133,6 +134,7 @@
       shown: PAGE_SIZE,
       salt: 0,
       revealed: new Set(), // id các bài đang mở hướng dẫn giải
+      keyShown: new Set(), // id các bài đang hiện đáp án dạng chữ (item.key)
       flash: {}, // id → thông điệp phản hồi vừa chấm
     };
 
@@ -211,6 +213,7 @@
       const rec = ctx.learner.exercises[item.id];
       const chosen = rec && rec.a ? rec.a : null;
       const wrongMcq = chosen && item.ans && chosen !== item.ans;
+      const exam = item.ex ? X.exam(item.ex) : null;
       return AM.tutorUI.launcher({
         key: 'ex:' + item.id,
         mode: 'hint',
@@ -222,12 +225,12 @@
         context: {
           grade: grade,
           topic: topic ? topic.chapterTitle + ' — ' + topic.title : null,
-          lesson: lesson ? lesson.title : null,
+          lesson: lesson ? lesson.title : exam ? X.examTitle(exam) : null,
           label: item.n,
           kind: X.KIND_LABELS[item.k],
           level: item.lv,
           mastery: m && m.source !== 'default' ? m.value : null,
-          answerKey: item.ans || null,
+          answerKey: item.ans || item.key || null,
           studentAnswer: chosen
             ? chosen + (item.ans ? (chosen === item.ans ? ' (đúng)' : ' (sai)') : '')
             : null,
@@ -293,6 +296,7 @@
       }
 
       const solOpen = st.revealed.has(item.id);
+      const keyOpen = st.keyShown.has(item.id);
       return el(
         'article',
         { class: U.cn('ex-card', status && 'is-' + status), 'data-ex': item.id },
@@ -302,6 +306,7 @@
           el('strong', { class: 'ex-label' }, item.n),
           ui.levelChip(item.lv),
           ui.pill(X.KIND_LABELS[item.k] || item.k, 'teal'),
+          item.pt ? ui.pill(item.pt + ' điểm', 'sky') : null,
           statusPill(item),
           el('span', { class: 'grow' }),
           status
@@ -351,6 +356,22 @@
                 solOpen ? 'Ẩn hướng dẫn' : 'Xem hướng dẫn giải',
               )
             : null,
+          item.key
+            ? el(
+                'button',
+                {
+                  class: 'btn btn-ghost btn-sm',
+                  type: 'button',
+                  onclick: function () {
+                    if (st.keyShown.has(item.id)) st.keyShown.delete(item.id);
+                    else st.keyShown.add(item.id);
+                    refreshCard(item);
+                  },
+                },
+                U.icon(keyOpen ? 'visibility_off' : 'key'),
+                keyOpen ? 'Ẩn đáp án' : 'Xem đáp án',
+              )
+            : null,
         ),
         flash
           ? el('div', { class: U.cn('ex-flash', status === 'done' ? 'is-ok' : 'is-bad') }, flash)
@@ -362,6 +383,14 @@
               { class: 'ex-sol' },
               el('div', { class: 'section-label' }, 'Hướng dẫn giải'),
               images(item.sol, 'Hướng dẫn giải ' + item.n),
+            )
+          : null,
+        keyOpen && item.key
+          ? el(
+              'div',
+              { class: 'ex-sol' },
+              el('div', { class: 'section-label' }, 'Đáp án'),
+              el('p', {}, item.key),
             )
           : null,
       );
@@ -660,19 +689,80 @@
 
     // ---- 3. Ôn tập chương & đề kiểm tra ----------------------------------
 
+    /** Một đề đã tách câu: Phần I Trắc nghiệm, Phần II Tự luận. */
+    function examBlock(e, items) {
+      const done = items.filter((x) => X.statusOf(ctx.learner, x.id) === 'done').length;
+      const PART_NAMES = { tn: ['Phần I. Trắc nghiệm', 'trắc nghiệm'], tl: ['Phần II. Tự luận', 'tự luận'] };
+      const parts = ['tn', 'tl']
+        .map((p) => ({ p: p, list: items.filter((x) => x.p === p) }))
+        .filter((g) => g.list.length > 0);
+      const summary = parts.map((g) => g.list.length + ' câu ' + PART_NAMES[g.p][1]).join(', ');
+      return el(
+        'details',
+        { class: 'ex-chapter' },
+        el(
+          'summary',
+          {},
+          el('span', { class: 'ex-ch-no' }, 'Đề ' + e.no),
+          el('span', { class: 'grow' }, e.time + ' phút · ' + summary),
+          el('span', { class: 'muted-sm' }, done ? 'đã làm được ' + done + '/' + items.length : ''),
+        ),
+        el(
+          'div',
+          { class: 'stack-sm ex-ch-body' },
+          parts.map((g) =>
+            el(
+              'div',
+              { class: 'stack-sm' },
+              el('h4', { class: 'ex-lesson' }, (e.parts && e.parts[g.p]) || PART_NAMES[g.p][0]),
+              g.list.map(exerciseCard),
+            ),
+          ),
+        ),
+      );
+    }
+
     function extrasCard() {
       const extras = X.extrasForGrade(grade);
-      if (extras.length === 0) return null;
+      const exams = X.examsForGrade(grade);
+      if (extras.length === 0 && exams.length === 0) return null;
       const groups = new Map();
       for (const x of extras) {
         const key = x.k === 'exam' ? 'Đề kiểm tra tổng hợp' : 'Ôn tập chương ' + (x.ch || '');
         if (!groups.has(key)) groups.set(key, []);
         groups.get(key).push(x);
       }
+      // Đề theo loại (giữa kì / cuối kì), giữ thứ tự xuất hiện trong tài liệu.
+      const byType = new Map();
+      for (const g of exams) {
+        if (!byType.has(g.exam.type)) byType.set(g.exam.type, []);
+        byType.get(g.exam.type).push(g);
+      }
       return el(
         'section',
         { class: 'card stack-sm' },
         el('h2', { class: 'card-title' }, U.icon('assignment'), 'Ôn tập chương & đề kiểm tra'),
+        exams.length
+          ? el(
+              'p',
+              { class: 'muted-sm' },
+              'Mỗi đề gồm phần trắc nghiệm và tự luận, giữ nguyên đề gốc. Làm ra giấy trong ' +
+                'thời gian quy định rồi tự đánh giá từng câu; câu nào có đáp án thì bấm "Xem đáp án" để đối chiếu.',
+            )
+          : null,
+        Array.from(byType.entries()).map(([type, list]) =>
+          el(
+            'details',
+            { class: 'ex-chapter' },
+            el(
+              'summary',
+              {},
+              el('span', { class: 'grow' }, X.EXAM_TYPE_LABELS[type] || list[0].exam.title),
+              el('span', { class: 'muted-sm' }, list.length + ' đề'),
+            ),
+            el('div', { class: 'stack-sm ex-ch-body' }, list.map((g) => examBlock(g.exam, g.items))),
+          ),
+        ),
         Array.from(groups.entries()).map(([title, list]) =>
           el(
             'details',
