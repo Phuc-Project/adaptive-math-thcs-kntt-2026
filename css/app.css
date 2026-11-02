@@ -2661,222 +2661,7 @@ details.debug pre {
 }
 
 
-/* ==========================================================================
-   Gia sư AI
-   ========================================================================== */
-
-.tutor {
-  background: #fff;
-  border: 1px solid var(--rule);
-  border-radius: var(--radius-lg);
-  padding: 1.1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  box-shadow: var(--shadow-card);
-}
-
-.tutor.is-compact {
-  margin-top: 0.5rem;
-  background: var(--paper);
-}
-
-.tutor-head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  color: var(--ink-strong);
-}
-
-.tutor-avatar {
-  display: none;
-}
-
-.tutor-modes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.tutor-modes .ex-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.tutor-modes .material-symbols-outlined {
-  font-size: 1.05rem;
-}
-
-.tutor-msgs {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  max-height: 32rem;
-  overflow-y: auto;
-}
-
-.tutor-empty {
-  padding: 0.4rem 0.2rem;
-}
-
-.tutor-msg {
-  flex: none; /* không co lại trong khung cuộn — co lại sẽ cắt mất dòng cuối */
-  border-radius: var(--radius-md);
-  padding: 0.75rem 0.95rem;
-  line-height: 1.7;
-  overflow-x: auto;
-}
-
-/* Câu hỏi của học sinh: mực xanh như chữ trong vở. */
-.tutor-msg.is-user {
-  align-self: flex-end;
-  max-width: 85%;
-  background: var(--blue-wash);
-  color: #1c3f7a;
-  white-space: pre-wrap;
-  border: 1px solid #c9d7ef;
-}
-
-/* Lời gia sư: tờ giấy có lề bảng xanh. */
-.tutor-msg.is-model {
-  background: var(--sheet);
-  border: 1px solid var(--rule);
-  border-left: 3px solid var(--board);
-}
-
-.tutor-tag {
-  display: block;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--blue-ink);
-  margin-bottom: 0.1rem;
-}
-
-.tutor-rich p {
-  margin: 0 0 0.45rem;
-}
-
-.tutor-rich ul,
-.tutor-rich ol {
-  margin: 0 0 0.45rem;
-  padding-left: 1.3rem;
-}
-
-.tutor-rich .tutor-h {
-  font-weight: 800;
-  color: var(--ink-strong);
-}
-
-.tutor-rich code {
-  background: rgba(0, 53, 39, 0.06);
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-}
-
-.tutor-typing {
-  display: inline-flex;
-  gap: 0.25rem;
-}
-
-.tutor-typing span {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--green-700);
-  opacity: 0.35;
-  animation: tutor-blink 1s infinite;
-}
-
-.tutor-typing span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.tutor-typing span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes tutor-blink {
-  50% {
-    opacity: 1;
-  }
-}
-
-.tutor-input {
-  width: 100%;
-  resize: vertical;
-  min-height: 3.5rem;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid var(--rule-strong);
-  padding: 0.65rem 0.85rem;
-  font: inherit;
-  color: var(--ink);
-  background: #fff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.tutor-input:focus {
-  outline: none;
-  border-color: var(--green-500);
-  box-shadow: 0 0 0 3px rgba(11, 81, 61, 0.15);
-}
-
-.tutor-uploads {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.tutor-thumb {
-  position: relative;
-}
-
-.tutor-thumb img {
-  height: 4.5rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--rule);
-}
-
-.tutor-thumb .icon-btn {
-  position: absolute;
-  top: -0.6rem;
-  right: -0.6rem;
-  width: 1.7rem;
-  height: 1.7rem;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid var(--rule);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.tutor-dev {
-  padding: 0.75rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid #f0dc95;
-  background: rgba(245, 158, 11, 0.1);
-}
-
-.tutor-dev .field {
-  flex: 1 1 14rem;
-}
-
-.tutor-note {
-  font-size: 0.75rem;
-  color: var(--muted-soft);
-  margin: 0;
-}
-
-.tutor-launch {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-}
-
-.tutor-launch > .tutor {
-  align-self: stretch;
-}
+/* Gia sư AI: xem khối "Gia sư AI — bàn làm việc" ở cuối file. */
 
 /* ==========================================================================
    Lộ trình do Gia sư AI xây dựng
@@ -2952,11 +2737,6 @@ details.debug pre {
   color: var(--muted-soft);
 }
 
-.tutor-meta {
-  margin-top: 0.35rem;
-  font-size: 0.72rem;
-  color: var(--muted-soft);
-}
 
 
 /* ==========================================================================
@@ -3041,18 +2821,6 @@ details.debug pre {
   padding: 0.3rem 0 !important;
 }
 
-.tutor-topic {
-  align-items: flex-end;
-}
-
-.tutor-topic .field-label {
-  display: grid;
-  gap: 0.3rem;
-}
-
-.tutor-topic select.field {
-  min-height: 2.6rem;
-}
 
 .help-note.is-waiting {
   border-left-color: var(--chalk-yellow);
@@ -3264,16 +3032,6 @@ details.debug pre {
   font-size: 1.1rem;
 }
 
-.tutor-suggest {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.tutor-suggest .ex-chip {
-  text-align: left;
-}
 
 .landing-note {
   margin-top: 0.75rem;
@@ -3291,5 +3049,861 @@ details.debug pre {
   }
   .trial-math .katex {
     font-size: 1em;
+  }
+}
+
+/* ==========================================================================
+   Gia sư AI — bàn làm việc
+   Một khung duy nhất chia bốn tầng: đầu khung (ai đang trả lời, trạng thái),
+   thanh chế độ, vùng hội thoại trên nền giấy ô li, ô soạn câu hỏi.
+   Lời gia sư được trình bày như một bài giải trên vở: bước đánh số nối
+   bằng đường kẻ dọc, công thức đặt trong khung riêng, đáp số tô phấn vàng.
+   ========================================================================== */
+
+.tutor {
+  display: flex;
+  flex-direction: column;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* ---- Đầu khung ---- */
+.tutor-head {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tutor-mark,
+.tutor-msg-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-md);
+  background: var(--board);
+  color: var(--chalk-yellow);
+}
+
+.tutor-mark .material-symbols-outlined {
+  font-size: 1.3rem;
+}
+
+.tutor-title {
+  display: grid;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.tutor-title strong {
+  font-size: 1rem;
+  color: var(--ink-strong);
+}
+
+.tutor-title span {
+  font-size: 0.82rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutor-status {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.tutor-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--emerald);
+}
+
+.tutor-status.is-busy .tutor-dot {
+  background: var(--amber);
+  animation: tutor-blink 1s infinite;
+}
+
+.tutor-new {
+  flex: none;
+}
+
+/* ---- Thanh chế độ: một nhóm nút liền khối ---- */
+.tutor-modebar {
+  padding: 0.75rem 1rem 0.7rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+.tutor-modes {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tutor-modes::-webkit-scrollbar {
+  display: none;
+}
+
+.tutor-mode {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tutor-mode .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.tutor-mode:hover:not(:disabled) {
+  color: var(--ink-strong);
+}
+
+.tutor-mode.is-active {
+  background: var(--sheet);
+  border-color: var(--rule);
+  color: var(--board);
+  box-shadow: 0 1px 2px rgba(22, 32, 36, 0.08);
+}
+
+.tutor-mode:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.tutor-mode-desc {
+  margin: 0.5rem 0 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+/* ---- Vùng hội thoại trên nền giấy ô li ---- */
+.tutor-msgs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.1rem 1rem 1.25rem;
+  min-height: 22rem;
+  max-height: max(24rem, calc(100vh - 22rem));
+  overflow-y: auto;
+  background-color: #fafbfd;
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.tutor-msg {
+  flex: none; /* không co lại trong khung cuộn — co lại sẽ cắt mất dòng cuối */
+  min-width: 0;
+}
+
+.tutor-msg-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+/* Câu hỏi của học sinh: mực xanh như chữ trong vở. */
+.tutor-msg.is-user {
+  align-self: flex-end;
+  max-width: min(36rem, 85%);
+  padding: 0.6rem 0.9rem 0.7rem;
+  border-radius: 12px 12px 4px 12px;
+  background: var(--blue-wash);
+  border: 1px solid #c9d7ef;
+  color: #1c3f7a;
+}
+
+.tutor-msg.is-user .tutor-msg-meta {
+  color: var(--blue-ink);
+  margin-bottom: 0.15rem;
+}
+
+.tutor-msg-text {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.tutor-msg-imgs {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.2rem 0 0.4rem;
+}
+
+.tutor-msg-imgs img {
+  max-height: 7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #c9d7ef;
+}
+
+/* Lời gia sư: một tờ giấy có lề, ký hiệu gia sư bên trái. */
+.tutor-msg.is-model {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  max-width: 54rem;
+}
+
+.tutor-msg-avatar .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+.tutor-msg-body {
+  min-width: 0;
+  padding: 0.75rem 1.05rem 0.85rem;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: 4px 12px 12px 12px;
+}
+
+.tutor-msg-body .tutor-msg-meta strong {
+  color: var(--ink-strong);
+  font-size: 0.85rem;
+}
+
+.tutor-msg-body .tutor-msg-meta > span {
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--board-soft);
+  color: var(--board);
+  font-size: 0.74rem;
+}
+
+.tutor-act {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.45rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  font-size: 0.76rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tutor-act:hover {
+  background: var(--paper);
+  color: var(--ink-strong);
+}
+
+.tutor-act .material-symbols-outlined {
+  font-size: 0.95rem;
+}
+
+.tutor-meta {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--muted-soft);
+}
+
+/* ---- Nội dung trả lời ---- */
+.tutor-rich {
+  line-height: 1.75;
+  color: var(--ink);
+  overflow-x: auto;
+}
+
+.tutor-rich p {
+  margin: 0 0 0.5rem;
+}
+
+.tutor-rich > :last-child {
+  margin-bottom: 0;
+}
+
+.tutor-rich ul,
+.tutor-rich ol {
+  margin: 0 0 0.55rem;
+  padding-left: 1.4rem;
+}
+
+.tutor-rich li {
+  margin: 0.15rem 0;
+}
+
+.tutor-rich ol li::marker {
+  color: var(--board);
+  font-weight: 700;
+}
+
+.tutor-rich ul li::marker {
+  color: var(--green-500);
+}
+
+.tutor-rich .tutor-h {
+  margin: 0.75rem 0 0.4rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px dashed var(--rule-strong);
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.tutor-rich > .tutor-h:first-child {
+  margin-top: 0;
+}
+
+.tutor-rich code {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.9em;
+}
+
+.tutor-math {
+  display: block;
+  margin: 0.45rem 0;
+  padding: 0.35rem 0.9rem;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
+}
+
+.tutor-math .katex-display {
+  margin: 0.35rem 0;
+}
+
+.tutor-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.65rem;
+  padding-bottom: 0.7rem;
+}
+
+.tutor-step::after {
+  content: '';
+  position: absolute;
+  left: calc(0.875rem - 1px);
+  top: 1.9rem;
+  bottom: 0.15rem;
+  width: 2px;
+  background: var(--board-soft);
+}
+
+.tutor-step:not(:has(+ .tutor-step))::after {
+  display: none;
+}
+
+.tutor-step-no {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 2px solid var(--board);
+  background: var(--sheet);
+  color: var(--board);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.tutor-step-body {
+  padding-top: 0.05rem;
+  min-width: 0;
+}
+
+.tutor-answer {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #f0dc95;
+  border-left: 4px solid var(--chalk-yellow);
+  border-radius: var(--radius-sm);
+  background: var(--yellow-wash);
+}
+
+.tutor-typing {
+  display: inline-flex;
+  gap: 0.3rem;
+  padding: 0.35rem 0;
+}
+
+.tutor-typing span {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--board);
+  opacity: 0.3;
+  animation: tutor-blink 1s infinite;
+}
+
+.tutor-typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.tutor-typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes tutor-blink {
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---- Màn hình chờ: bốn chế độ dạng thẻ ---- */
+.tutor-empty {
+  display: grid;
+  gap: 0.9rem;
+  margin: auto 0;
+  padding: 0.5rem 0;
+}
+
+.tutor-empty-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.tutor-mode-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.6rem;
+}
+
+.tutor-mode-card {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr;
+  column-gap: 0.55rem;
+  row-gap: 0.15rem;
+  align-items: start;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--sheet);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.tutor-mode-card .material-symbols-outlined {
+  grid-row: span 2;
+  font-size: 1.3rem;
+  color: var(--board);
+}
+
+.tutor-mode-card strong {
+  color: var(--ink-strong);
+  font-size: 0.92rem;
+}
+
+.tutor-mode-card span:last-child {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.tutor-mode-card:hover {
+  border-color: var(--green-500);
+}
+
+.tutor-mode-card.is-active {
+  border-color: var(--board);
+  box-shadow: inset 0 0 0 1px var(--board);
+}
+
+.tutor-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tutor-suggest-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-right: 0.15rem;
+}
+
+.tutor-suggest-chip {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #c9d7ef;
+  border-radius: var(--radius-full);
+  background: var(--sheet);
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--blue-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.tutor-suggest-chip:hover {
+  background: var(--blue-wash);
+}
+
+/* ---- Ô soạn câu hỏi ---- */
+.tutor-foot {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.85rem;
+  border-top: 1px solid var(--rule);
+  background: var(--sheet);
+}
+
+.tutor-composer {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.5rem 0.55rem 0.45rem 0.7rem;
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 12px;
+  background: var(--sheet);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tutor-composer:focus-within {
+  border-color: var(--board);
+  box-shadow: 0 0 0 3px rgba(23, 70, 58, 0.12);
+}
+
+.tutor-input {
+  width: 100%;
+  min-height: 2.6rem;
+  max-height: 220px;
+  padding: 0.25rem 0.1rem;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font: inherit;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.tutor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tutor-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tutor-tool:hover {
+  background: var(--paper);
+  color: var(--ink-strong);
+}
+
+.tutor-tool .material-symbols-outlined {
+  font-size: 1.15rem;
+}
+
+.tutor-hint {
+  margin-left: auto;
+  font-size: 0.76rem;
+  color: var(--muted-soft);
+}
+
+.tutor-send .material-symbols-outlined {
+  font-size: 1.05rem;
+}
+
+.tutor-uploads {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding-top: 0.35rem;
+}
+
+.tutor-thumb {
+  position: relative;
+}
+
+.tutor-thumb img {
+  height: 4.25rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--rule);
+}
+
+.tutor-thumb .icon-btn {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--rule);
+}
+
+.tutor-note {
+  margin: 0;
+  font-size: 0.74rem;
+  color: var(--muted-soft);
+  text-align: center;
+}
+
+.tutor-dev {
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid #f0dc95;
+  background: var(--yellow-wash);
+}
+
+.tutor-dev .field {
+  flex: 1 1 14rem;
+}
+
+/* ---- Khung gọn trong thẻ bài tập / câu luyện tập ---- */
+.tutor-launch {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.tutor-launch > .tutor {
+  align-self: stretch;
+}
+
+.tutor.is-compact .tutor-msgs {
+  min-height: 0;
+  max-height: 28rem;
+}
+
+.tutor.is-compact .tutor-head {
+  padding: 0.6rem 0.85rem;
+}
+
+.tutor.is-compact .tutor-mark {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* ---- Trang #/tutor: khung hỏi + cột bối cảnh ---- */
+.tutor-page {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .tutor-page {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+    gap: 1.25rem;
+  }
+  .tutor-side {
+    position: sticky;
+    top: 5.5rem;
+  }
+}
+
+.tutor-side {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.tutor-side-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+  background: var(--sheet);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+}
+
+.tutor-side-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-strong);
+}
+
+.tutor-side-title .material-symbols-outlined {
+  font-size: 1.15rem;
+  color: var(--board);
+}
+
+.tutor-topic .field-label {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.tutor-topic select.field {
+  width: 100%;
+  min-height: 2.6rem;
+}
+
+.tutor-mastery {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.tutor-side .trial-formulas {
+  padding-left: 1.2rem;
+}
+
+.tutor-side .trial-formulas li {
+  display: grid;
+  gap: 0.05rem;
+  min-height: 0;
+  padding: 0.25rem 0;
+  border-bottom: 1px dashed var(--rule);
+}
+
+.tutor-side .trial-formulas li:last-child {
+  border-bottom: 0;
+}
+
+.tutor-side .trial-math .katex {
+  font-size: 0.98em;
+}
+
+.tutor-ref-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tutor-ref-math {
+  overflow-x: auto;
+  font-size: 0.92rem;
+}
+
+.tutor-side-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--board);
+}
+
+.tutor-side-link .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.tutor-tips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.tutor-tips li {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  gap: 0.45rem;
+  font-size: 0.87rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.tutor-tips .material-symbols-outlined {
+  font-size: 1.15rem;
+  color: var(--board);
+}
+
+@media (max-width: 640px) {
+  .tutor-head {
+    padding: 0.7rem 0.8rem;
+  }
+  .tutor-modebar,
+  .tutor-foot {
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+  }
+  .tutor-msgs {
+    padding: 0.9rem 0.75rem 1rem;
+    min-height: 18rem;
+    max-height: none;
+  }
+  .tutor-msg.is-model {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tutor-msg-avatar {
+    display: none;
+  }
+  .tutor-msg.is-user {
+    max-width: 92%;
+  }
+  .tutor-hint {
+    display: none;
+  }
+  .tutor-toolbar .tutor-send {
+    margin-left: auto;
+  }
+  .tutor-status {
+    display: none;
+  }
+  .tutor-new {
+    margin-left: auto;
+  }
+  .tutor-mode-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tutor-page {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.tutor-page > *,
+.tutor-main {
+  min-width: 0;
+}
+
+@media (min-width: 1100px) {
+  .tutor-page {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .tutor-math .katex,
+  .tutor-rich .katex {
+    font-size: 1.05em;
+  }
+  .tutor-math {
+    padding: 0.3rem 0.6rem;
   }
 }

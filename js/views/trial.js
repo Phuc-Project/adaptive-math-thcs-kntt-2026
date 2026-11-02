@@ -93,16 +93,20 @@
       : el('code', { class: 'trial-math' }, tex);
   }
 
+  function formulaList() {
+    return el(
+      'ol',
+      { class: 'trial-formulas' },
+      FORMULAS.map(([tex, name]) => el('li', {}, math(tex), el('span', { class: 'muted-sm' }, name))),
+    );
+  }
+
   function formulaSheet() {
     return el(
       'section',
       { class: 'card trial-sheet sheet-ruled' },
       el('h2', { class: 'card-title' }, 'Bảy hằng đẳng thức đáng nhớ'),
-      el(
-        'ol',
-        { class: 'trial-formulas' },
-        FORMULAS.map(([tex, name]) => el('li', {}, math(tex), el('span', { class: 'muted-sm' }, name))),
-      ),
+      formulaList(),
     );
   }
 
@@ -235,6 +239,7 @@
     isTrial: isTrial,
     homeCard: homeCard,
     crumb: crumb,
+    formulaList: formulaList,
   };
   AM.views = AM.views || {};
   AM.views.trial = view;

@@ -162,7 +162,7 @@ async function katexErrors(page) {
     await wait(S, 300);
     check('Gia sư chọn sẵn chủ đề HĐT', (await S.locator('.tutor-topic select').last().inputValue()) === '8-C2-B1');
     check('Địa chỉ được dọn về #/tutor', (await hash(S)) === '#/tutor', await hash(S));
-    const chips = S.locator('.tutor-suggest .ex-chip');
+    const chips = S.locator('.tutor-suggest-chip');
     check('Có gợi ý câu hỏi', (await chips.count()) === 4);
     await S.screenshot({ path: SHOTS + '/08-tutor.png' });
     await chips.first().click();

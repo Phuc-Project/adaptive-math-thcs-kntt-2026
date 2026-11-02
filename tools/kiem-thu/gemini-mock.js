@@ -22,7 +22,7 @@ function createGemini(opts) {
       };
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(plan) }] }, finishReason: 'STOP' }], usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50 } }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
-    const pieces = ['**Gợi ý:** Ta có $x + 3 = 5$ ', 'nên $x = 2$. Bước 1: chuyển vế 3 sang phải.\n', '- Kết quả là 2 và 10 cũng đúng.'];
+    const pieces = o.pieces || ['**Gợi ý:** Ta có $x + 3 = 5$ ', 'nên $x = 2$. Bước 1: chuyển vế 3 sang phải.\n', '- Kết quả là 2 và 10 cũng đúng.'];
     const sse = pieces
       .map((t, i) => 'data: ' + JSON.stringify({ candidates: [{ content: { parts: [{ text: t }] }, finishReason: i === pieces.length - 1 ? o.finish : undefined }], usageMetadata: i === pieces.length - 1 ? { promptTokenCount: 50, candidatesTokenCount: 20, thoughtsTokenCount: 10 } : undefined }) + '\r\n\r\n')
       .join('');

@@ -197,7 +197,7 @@ async function register(page, role, name, email) {
     if (await launch.count()) {
       await launch.click();
       await S.waitForTimeout(300);
-      await S.locator('.tutor .ex-chip:has-text("Gợi ý bước đầu")').first().click();
+      await S.locator('.tutor .tutor-mode:has-text("Gợi ý bước đầu")').first().click();
       await S.waitForTimeout(2500);
       const t = await S.locator('.tutor .tutor-msg.is-model').first().innerText().catch(() => '');
       check('Gia sư trong thẻ bài tập trả lời', /Gợi ý/.test(t), t + ' | ' + (await S.locator('.tutor-foot .banner').allInnerTexts()).join(';'));
