@@ -124,7 +124,7 @@
           'a',
           {
             class: 'btn btn-primary btn-sm',
-            href: '#/practice?topic=' + encodeURIComponent(topicId) + '&levels=N,H&count=5',
+            href: '#/practice?topic=' + encodeURIComponent(topicId) + '&levels=N,H',
           },
           'Luyện lại chủ đề này',
         ),

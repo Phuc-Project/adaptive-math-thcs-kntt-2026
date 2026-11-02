@@ -73,6 +73,7 @@
 
   /** Routes a teacher account has no data for, and so never renders. */
   const STUDENT_ONLY = [
+    '/thu',
     '/onboarding',
     '/diagnostic',
     '/profile',
@@ -108,6 +109,15 @@
     }
 
     if (path === '/login' || path === '/landing') {
+      // Vừa đăng nhập từ nút "Học thử" ở trang giới thiệu → vào thẳng bài dùng thử.
+      if (consumeNext() === '/thu' && !AM.auth.isTeacher()) {
+        try {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search + '#/thu');
+        } catch (err) {
+          // file:// — vẫn hiện bài dùng thử, chỉ địa chỉ chưa đổi.
+        }
+        return routes['/thu'];
+      }
       // Already signed in — nothing to do on either of those screens.
       return homeFor();
     }
@@ -121,6 +131,28 @@
     if (path === '/admin' && !AM.auth.isAdmin()) return homeFor();
 
     return routes[path] || notFound;
+  }
+
+  /**
+   * Trang cần mở ngay sau khi đăng nhập (trang giới thiệu đặt vào khi khách
+   * bấm "Học thử"). Đọc một lần rồi xoá.
+   */
+  const NEXT_KEY = 'am.afterLogin';
+  function rememberNext(path) {
+    try {
+      window.sessionStorage.setItem(NEXT_KEY, path);
+    } catch (err) {
+      // Bộ nhớ phiên bị chặn: sau đăng nhập về trang chính, vẫn có thẻ dùng thử.
+    }
+  }
+  function consumeNext() {
+    try {
+      const v = window.sessionStorage.getItem(NEXT_KEY);
+      if (v) window.sessionStorage.removeItem(NEXT_KEY);
+      return v;
+    } catch (err) {
+      return null;
+    }
   }
 
   /** Whichever dashboard belongs to the signed-in role. */
@@ -208,5 +240,6 @@
     render: render,
     parseHash: parseHash,
     start: start,
+    rememberNext: rememberNext,
   };
 })(window.AM);

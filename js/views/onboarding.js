@@ -44,6 +44,7 @@
       grade: existing ? existing.grade : null,
       goal: existing ? existing.goal : null,
       dailyMinutes: existing ? existing.dailyMinutes : null,
+      sessionLength: existing && existing.sessionLength ? existing.sessionLength : 'auto',
       deadline: existing ? existing.deadline : null,
       selfLevel: existing ? existing.selfLevel : null,
       weakTopicIds: existing ? existing.weakTopicIds.slice() : [],
@@ -104,6 +105,7 @@
         grade: draft.grade,
         goal: draft.goal,
         dailyMinutes: draft.dailyMinutes,
+        sessionLength: draft.sessionLength || 'auto',
         deadline: draft.deadline || null,
         selfLevel: draft.selfLevel,
         weakTopicIds: weakTopicsForGrade(draft.grade),
@@ -134,7 +136,7 @@
       return el(
         'div',
         { class: 'stack-sm' },
-        el('div', { style: { fontSize: '3rem' } }, '📐'),
+        AM.ui.brandMark(),
         el('h1', { class: 'page-title' }, 'Chào bạn!'),
         el(
           'p',
@@ -244,6 +246,29 @@
           C.DAILY_MINUTES_OPTIONS.map((opt) =>
             optionCard(opt, draft.dailyMinutes === opt.value, (v) => set('dailyMinutes', v)),
           ),
+        ),
+        el('h2', { class: 'card-title', style: { marginTop: '1rem' } }, 'Mỗi buổi luyện tập bao nhiêu câu?'),
+        el(
+          'p',
+          { class: 'muted-sm' },
+          'Mỗi câu khoảng 1,5 phút. Lộ trình tính thời gian theo đúng số câu này, và em vẫn đổi được ngay khi bắt đầu một buổi.',
+        ),
+        el(
+          'div',
+          { class: 'option-grid cols-2' },
+          C.SESSION_LENGTH_OPTIONS.map((opt) => {
+            const o =
+              opt.value === 'auto'
+                ? Object.assign({}, opt, {
+                    description: draft.dailyMinutes
+                      ? 'Với ' + draft.dailyMinutes + ' phút mỗi ngày: ' +
+                        C.autoSessionQuestions(draft.dailyMinutes) + ' câu, khoảng ' +
+                        C.minutesForQuestions(C.autoSessionQuestions(draft.dailyMinutes)) + ' phút.'
+                      : opt.description,
+                  })
+                : opt;
+            return optionCard(o, (draft.sessionLength || 'auto') === opt.value, (v) => set('sessionLength', v));
+          }),
         ),
       );
     }
@@ -558,6 +583,13 @@
         ['Lớp', draft.grade ? C.GRADE_LABELS[draft.grade] : '—'],
         ['Mục tiêu', goal ? goal.label : '—'],
         ['Thời gian mỗi ngày', draft.dailyMinutes ? draft.dailyMinutes + ' phút' : '—'],
+        [
+          'Mỗi buổi luyện tập',
+          C.sessionQuestionCount({ sessionLength: draft.sessionLength, dailyMinutes: draft.dailyMinutes }) +
+            ' câu (khoảng ' +
+            C.minutesForQuestions(C.sessionQuestionCount({ sessionLength: draft.sessionLength, dailyMinutes: draft.dailyMinutes })) +
+            ' phút)',
+        ],
         ['Ngày thi', draft.deadline ? U.formatDateVN(draft.deadline) : 'Không có'],
         ['Tự đánh giá', level ? level.label : '—'],
         ['Chủ đề tự thấy yếu', draft.weakTopicIds.length + ' chủ đề'],

@@ -16,6 +16,11 @@
 (function (AM) {
   'use strict';
 
+  /** θ (IRT) → điểm 0–100 dễ hiểu cho học sinh; θ vẫn được lưu nguyên. */
+  function abilityScore(theta) {
+    return Math.round(100 / (1 + Math.exp(-1.2 * (Number(theta) || 0))));
+  }
+
   const U = AM.util;
   const el = U.el;
   const ui = AM.ui;
@@ -490,8 +495,8 @@
             'div',
             { class: 'grid-3' },
             ui.statTile(doneCount + '/' + CHAPTERS.length, 'Chương đã kiểm tra'),
-            ui.statTile(s && s.responses.length ? 'θ ≈ ' + s.theta.toFixed(2) : '—', 'Năng lực ước lượng'),
-            ui.statTile('90–180s', 'Mỗi câu'),
+            ui.statTile(s && s.responses.length ? abilityScore(s.theta) + '/100' : '—', 'điểm năng lực ước tính'),
+            ui.statTile('1,5–3 phút', 'cho mỗi câu'),
           ),
           ui.banner(
             'info',
@@ -558,7 +563,7 @@
           { class: 'grid-3' },
           ui.statTile(stats.correct + '/' + stats.answered, 'Câu đúng'),
           ui.statTile(stats.answered ? U.pct(stats.correct / stats.answered) : '—', 'Tỉ lệ đúng'),
-          ui.statTile('θ ≈ ' + s.theta.toFixed(2), 'Năng lực ước lượng'),
+          ui.statTile(abilityScore(s.theta) + '/100', 'điểm năng lực ước tính'),
         ),
         el(
           'div',
@@ -634,7 +639,6 @@
             ui.pill('Chương ' + rt.chapter.no, 'teal', 'bookmark'),
             ui.pill('Câu ' + (answered + (rt.reveal ? 0 : 1)) + ' / ≤ ' + rt.chapter.maxItems, 'green', 'quiz'),
             ui.pill('Chủ đề xong: ' + doneTopics + '/' + totalTopics, 'sky', 'checklist'),
-            ui.pill('θ ≈ ' + rt.session.theta.toFixed(2), 'violet', 'analytics'),
           ),
           el(
             'span',

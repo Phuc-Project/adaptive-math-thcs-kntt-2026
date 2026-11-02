@@ -239,11 +239,11 @@
         el(
           'div',
           {},
-          el('div', { class: 'section-label', style: { color: '#b2f746' } }, 'Lớp của bạn'),
+          el('div', { class: 'next-step-label' }, 'Lớp của bạn'),
           el('h2', { class: 'page-title', style: { color: '#fff' } }, state.cls.name),
           el(
             'p',
-            { style: { color: 'rgba(234,255,245,0.8)' } },
+            { style: { color: 'rgba(238,244,240,0.86)' } },
             'Giáo viên: ' + state.cls.teacherName + ' · Mã lớp: ' + state.cls.code,
           ),
         ),
@@ -262,12 +262,12 @@
 
       if (pending) {
         return ui.sectionCard(
-          [U.icon('help'), 'Yêu cầu hỗ trợ'],
-          'Giáo viên sẽ thấy yêu cầu này trong danh sách lớp.',
+          'Câu hỏi gửi thầy cô',
+          'Thầy cô thấy câu hỏi này ngay trên trang lớp. Câu trả lời sẽ hiện ở đây.',
           el(
             'div',
-            { class: 'help-note is-pending' },
-            ui.pill('Đang chờ giáo viên', 'amber'),
+            { class: 'help-note is-waiting' },
+            ui.pill('Đang chờ thầy cô trả lời', 'amber'),
             el('p', { class: 'help-message' }, help.message),
           ),
           el(
@@ -307,7 +307,7 @@
       const box = el('textarea', {
         class: 'field',
         rows: 3,
-        placeholder: 'Ví dụ: Em chưa hiểu phần xét dấu tam thức bậc hai…',
+        placeholder: 'Ví dụ: Em chưa hiểu cách phân tích đa thức thành nhân tử…',
         value: state.helpText,
         disabled: state.busy,
         oninput: function (e) {

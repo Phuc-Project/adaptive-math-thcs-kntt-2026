@@ -26,7 +26,10 @@ window.AM = window.AM || {};
         else if (key === 'html') node.innerHTML = value;
         else if (key === 'text') node.textContent = value;
         else if (key === 'style' && typeof value === 'object') {
-          Object.assign(node.style, value);
+          for (const prop of Object.keys(value)) {
+            if (prop.startsWith('--')) node.style.setProperty(prop, value[prop]);
+            else node.style[prop] = value[prop];
+          }
         } else if (key.startsWith('on') && typeof value === 'function') {
           node.addEventListener(key.slice(2).toLowerCase(), value);
         } else if (value === true) {

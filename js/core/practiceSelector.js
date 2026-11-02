@@ -21,6 +21,19 @@
     return U.shuffled(fresh, rng).concat(U.shuffled(used, rng)).slice(0, n);
   }
 
+  const LEVEL_ORDER = ['N', 'H', 'V', 'T'];
+
+  /** Khoảng cách từ một mức tới mức gần nhất trong danh sách mục tiêu. */
+  function levelDistance(level, targets) {
+    const i = LEVEL_ORDER.indexOf(level === 'unknown' ? 'H' : level);
+    let best = 9;
+    for (const t of targets) {
+      const j = LEVEL_ORDER.indexOf(t);
+      if (i !== -1 && j !== -1) best = Math.min(best, Math.abs(i - j));
+    }
+    return best;
+  }
+
   /**
    * Select questions for a full three-phase practice session.
    *
@@ -30,6 +43,9 @@
    * @param learner          Learner state, for used-question tracking.
    * @param masteredTopicIds Topics already BKT-mastered — source of warm-ups.
    * @param sessionSeed      Seed for this session's RNG.
+   * @param counts           { warmup, practice, assessment } — số câu mỗi phần.
+   *                         Mỗi mức chỉ có 4 câu/chủ đề, nên khi cần nhiều câu
+   *                         hơn, phần luyện tập lấy thêm từ mức kề bên.
    */
   function selectPracticeQuestions(
     pool,
@@ -38,42 +54,64 @@
     learner,
     masteredTopicIds,
     sessionSeed,
+    counts,
   ) {
+    const want = Object.assign({ warmup: 3, practice: 8, assessment: 5 }, counts || {});
     const rng = U.mulberry32(sessionSeed);
     const usedSet = new Set(learner.usedQuestionIds);
 
-    // --- Warm-up: up to 3 recognition items from topics already mastered ---
+    // --- Warm-up: recognition items from topics already mastered ---
     const warmupPool = pool.filter(
       (q) =>
         masteredTopicIds.indexOf(q.topicId) !== -1 &&
         q.topicId !== topicId &&
         (q.level === 'N' || q.level === 'unknown'),
     );
-    const warmup = pickN(warmupPool, 3, usedSet, rng);
+    const warmup = pickN(warmupPool, want.warmup, usedSet, rng);
 
-    // --- Practice: up to 8 items at the target levels ---
+    // --- Practice: target levels first, then the nearest other levels ---
     const targetLevelSet = new Set(levels);
-    // Untagged items double as medium difficulty.
     if (targetLevelSet.has('H')) targetLevelSet.add('unknown');
+    const topicPool = pool.filter((q) => q.topicId === topicId);
+    const primary = topicPool.filter((q) => targetLevelSet.has(q.level));
+    let practice = pickN(primary, want.practice, usedSet, rng);
+    if (practice.length < want.practice) {
+      const taken = new Set(practice.map((q) => q.id));
+      const rest = topicPool.filter((q) => !taken.has(q.id));
+      // Gần mức mục tiêu trước; cùng khoảng cách thì câu chưa làm trước.
+      const groups = {};
+      for (const q of rest) {
+        const d = levelDistance(q.level, levels);
+        (groups[d] = groups[d] || []).push(q);
+      }
+      Object.keys(groups)
+        .map(Number)
+        .sort((x, y) => x - y)
+        .forEach(function (d) {
+          if (practice.length >= want.practice) return;
+          practice = practice.concat(pickN(groups[d], want.practice - practice.length, usedSet, rng));
+        });
+    }
 
-    const practicePool = pool.filter(
-      (q) => q.topicId === topicId && targetLevelSet.has(q.level),
-    );
-    const practice = pickN(practicePool, 8, usedSet, rng);
-
-    // --- Assessment: 5 mixed items (2N + 2H + 1V), none reused from practice --
+    // --- Assessment: mixed levels N, H, V, N, H… — none reused from practice --
     const practiceIds = new Set(practice.map((p) => p.id));
-    const assessPool = pool.filter(
-      (q) => q.topicId === topicId && !practiceIds.has(q.id),
-    );
-    const assessment = pickN(
-      assessPool.filter((q) => q.level === 'N' || q.level === 'unknown'),
-      2,
-      usedSet,
-      rng,
-    )
-      .concat(pickN(assessPool.filter((q) => q.level === 'H'), 2, usedSet, rng))
-      .concat(pickN(assessPool.filter((q) => q.level === 'V'), 1, usedSet, rng));
+    const assessPool = topicPool.filter((q) => !practiceIds.has(q.id));
+    const assessment = [];
+    const byLevel = {
+      N: U.shuffled(assessPool.filter((q) => q.level === 'N' || q.level === 'unknown'), rng),
+      H: U.shuffled(assessPool.filter((q) => q.level === 'H'), rng),
+      V: U.shuffled(assessPool.filter((q) => q.level === 'V'), rng),
+      T: U.shuffled(assessPool.filter((q) => q.level === 'T'), rng),
+    };
+    const order = ['N', 'H', 'N', 'H', 'V', 'V', 'T'];
+    for (let i = 0; assessment.length < want.assessment && i < order.length * 3; i++) {
+      const lv = order[i % order.length];
+      const list = byLevel[lv];
+      if (!list.length) continue;
+      // ưu tiên câu chưa làm
+      const k = list.findIndex((q) => !usedSet.has(q.id));
+      assessment.push(list.splice(k === -1 ? 0 : k, 1)[0]);
+    }
 
     return { warmup: warmup, practice: practice, assessment: assessment };
   }

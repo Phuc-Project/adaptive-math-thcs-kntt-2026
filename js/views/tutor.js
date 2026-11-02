@@ -218,12 +218,7 @@
           controller.signal,
         );
         reply.pending = false;
-        reply.meta = res.cached
-          ? 'Trả lời từ bộ nhớ đệm — không tốn lượt gọi AI'
-          : res.usage
-            ? '≈ ' + (res.usage.in + res.usage.out + res.usage.think) + ' token' +
-              (res.usage.cached ? ' (' + res.usage.cached + ' token được giảm giá nhờ cache)' : '')
-            : null;
+        reply.meta = null;
         if (!reply.text) reply.text = res.text || '_(Gia sư không trả lời được, em thử hỏi lại nhé.)_';
         if (res.warning) s.error = res.warning;
       } catch (e) {
@@ -380,6 +375,29 @@
         { class: 'tutor-foot stack-sm' },
         s.error ? ui.banner('error', s.error) : null,
         s.errorCode === 'no-backend' ? devKeyBox() : null,
+        s.messages.length === 0 && !s.busy && opts.suggestions && opts.suggestions.length
+          ? el(
+              'div',
+              { class: 'tutor-suggest' },
+              el('span', { class: 'muted-sm' }, 'Gợi ý câu hỏi:'),
+              opts.suggestions.map((q) =>
+                el(
+                  'button',
+                  {
+                    type: 'button',
+                    class: 'ex-chip',
+                    onclick: function () {
+                      s.mode = 'ask';
+                      const bar = U.qs('.tutor-modes', findPanel(opts.key) || root);
+                      if (bar) bar.parentNode.replaceChild(modeBar(), bar);
+                      send(q);
+                    },
+                  },
+                  q,
+                ),
+              ),
+            )
+          : null,
         s.uploads.length
           ? el(
               'div',
@@ -471,7 +489,7 @@
         { class: 'tutor-head' },
         el('span', { class: 'tutor-avatar' }, '🤖'),
         el('strong', {}, opts.title || 'Gia sư AI'),
-        el('span', { class: 'muted-sm' }, 'Gemini · theo SGK Kết nối tri thức'),
+        el('span', { class: 'muted-sm' }, 'Bám theo SGK Kết nối tri thức'),
       ),
       modeBar(),
       el('div', { class: 'tutor-msgs' }, messageNodes()),
@@ -513,12 +531,26 @@
 
   function view(params, ctx) {
     const pageState = view._state || (view._state = { topicId: '', grade: null });
+    // Mở từ một bài cụ thể (#/tutor?topic=…, ví dụ bài học dùng thử): chọn sẵn
+    // lớp và chủ đề đó, rồi bỏ tham số khỏi địa chỉ để lần chọn sau của học
+    // sinh không bị ghi đè.
+    const asked = params.topic ? AM.topics.getTopicById(params.topic) : null;
+    if (asked) {
+      pageState.grade = asked.grade;
+      pageState.topicId = asked.id;
+      try {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search + '#/tutor');
+      } catch (err) {
+        // file:// — địa chỉ còn tham số chỉ là chuyện thẩm mỹ.
+      }
+    }
     // Giáo viên (và học sinh chưa làm hồ sơ) không có lớp trong hồ sơ → cho tự chọn lớp.
     const ownGrade = ctx.profile ? ctx.profile.grade : null;
-    const grade = ownGrade || pageState.grade || null;
+    const grade = pageState.grade || ownGrade || null;
+    const showGradeSelect = !ownGrade || grade !== ownGrade;
     const topics = grade ? AM.topics.getTopicsByGrade(grade) : [];
     if (pageState.topicId && !topics.some((t) => t.id === pageState.topicId)) pageState.topicId = '';
-    const gradeSelect = ownGrade
+    const gradeSelect = !showGradeSelect
       ? null
       : el(
           'select',
@@ -543,7 +575,7 @@
           AM.router.render();
         },
       },
-      el('option', { value: '' }, 'Không chọn — hỏi chung'),
+      el('option', { value: '' }, 'Hỏi chung, không theo chủ đề'),
       topics.map((t) =>
         el('option', { value: t.id, selected: t.id === pageState.topicId || null }, 'Chương ' + t.chapter + ' · ' + t.title),
       ),
@@ -553,31 +585,29 @@
     const mastery = topic && AM.exercises ? AM.exercises.topicMastery(topic.id, ctx) : null;
 
     return ui.page(
-      { title: 'Gia sư AI', activeRoute: '#/tutor', actions: [ui.homeButton()] },
+      { title: 'Gia sư AI', activeRoute: '#/tutor' },
       el(
         'section',
-        { class: 'stack-sm' },
-        el('div', { class: 'section-label' }, grade ? 'Lớp ' + grade : 'Gia sư AI'),
+        {},
         el('h1', { class: 'page-title' }, 'Gia sư AI'),
         el(
           'p',
           { class: 'page-sub' },
-          'Chụp ảnh đề bài hoặc gõ câu hỏi. Gia sư gợi ý từng bước để em tự giải, kiểm tra bài làm, ' +
-            'hoặc giải chi tiết khi em cần — bám theo chương trình lớp của em.',
+          'Gõ câu hỏi hoặc chụp ảnh đề. Gia sư gợi ý từng bước để em tự làm, kiểm tra bài em làm, hoặc giải chi tiết khi em cần.',
         ),
       ),
       el(
         'div',
-        { class: 'card card-tight stack-sm' },
-        gradeSelect ? el('label', { class: 'field-label' }, 'Lớp') : null,
-        gradeSelect,
-        el('label', { class: 'field-label' }, 'Bài này thuộc chủ đề nào? (giúp gia sư dạy đúng kiến thức đã học)'),
-        select,
+        { class: 'tutor-topic row' },
+        gradeSelect ? el('label', { class: 'field-label' }, 'Lớp', gradeSelect) : null,
+        el('label', { class: 'field-label grow' }, 'Chủ đề (không bắt buộc)', select),
       ),
+      AM.trial && topic && topic.id === AM.trial.TOPIC_ID ? AM.trial.crumb(4, 'Hỏi Gia sư AI') : null,
       panel({
         key: 'page:' + (grade || 0) + ':' + (pageState.topicId || 'free'),
         mode: 'hint',
         allowUpload: true,
+        suggestions: AM.trial && topic && topic.id === AM.trial.TOPIC_ID ? AM.trial.TUTOR_SUGGESTIONS : null,
         context: {
           grade: grade,
           topic: topic ? topic.chapterTitle + ' — ' + topic.title : null,

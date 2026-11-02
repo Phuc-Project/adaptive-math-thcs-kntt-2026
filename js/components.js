@@ -76,29 +76,40 @@
    * work. The menus are therefore disjoint rather than one list with items
    * greyed out.
    */
+  // Thứ tự theo tần suất dùng: việc hằng ngày ở trên, việc thỉnh thoảng ở nhóm "Khác".
   const STUDENT_NAV = [
-    { route: '#/', label: 'Trang chính', icon: 'home' },
-    { route: '#/profile', label: 'Hồ sơ năng lực', icon: 'insights' },
-    { route: '#/learning-path', label: 'Lộ trình học', icon: 'map' },
-    { route: '#/diagnostic', label: 'Kiểm tra đầu vào', icon: 'quiz' },
-    { route: '#/exercises', label: 'Bài tập cá nhân hóa', icon: 'library_books' },
-    { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy' },
-    { route: '#/digital-tasks', label: 'Nhiệm vụ số', icon: 'task_alt' },
-    { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'error' },
-    { route: '#/classroom', label: 'Lớp học', icon: 'groups' },
+    { route: '#/', label: 'Trang chính', icon: 'home', tab: true },
+    { route: '#/thu', label: 'Bài học dùng thử', icon: 'auto_awesome' },
+    { route: '#/exercises', label: 'Bài tập', icon: 'edit_note', tab: true },
+    { route: '#/learning-path', label: 'Lộ trình học', icon: 'route' },
+    { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy', tab: true },
+    { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'rule' },
+    { route: '#/classroom', label: 'Lớp học', icon: 'groups', tab: true },
+    { route: '#/diagnostic', label: 'Kiểm tra đầu vào', icon: 'quiz', group: 'Khác' },
+    { route: '#/profile', label: 'Hồ sơ năng lực', icon: 'insights', group: 'Khác' },
+    { route: '#/digital-tasks', label: 'Nhiệm vụ số', icon: 'task_alt', group: 'Khác' },
   ];
 
   const TEACHER_NAV = [
-    { route: '#/teacher', label: 'Lớp của tôi', icon: 'groups' },
-    { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy' },
+    { route: '#/teacher', label: 'Lớp của tôi', icon: 'groups', tab: true },
+    { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy', tab: true },
   ];
 
-  const ADMIN_NAV = [{ route: '#/admin', label: 'Quản trị', icon: 'admin_panel_settings' }];
+  const ADMIN_NAV = [{ route: '#/admin', label: 'Quản trị', icon: 'admin_panel_settings', group: 'Quản trị' }];
 
   function navItems() {
     if (AM.auth.isTeacher()) return TEACHER_NAV;
-    if (AM.auth.isAdmin()) return ADMIN_NAV.concat(STUDENT_NAV);
+    if (AM.auth.isAdmin()) return STUDENT_NAV.concat(ADMIN_NAV);
     return STUDENT_NAV;
+  }
+
+  /** Mục đang mở: khớp cả route con (#/teacher?class=… vẫn là "Lớp của tôi"). */
+  function isActive(item, activeRoute) {
+    return activeRoute === item.route;
+  }
+
+  function brandMark() {
+    return el('span', { class: 'brand-mark', 'aria-hidden': 'true' }, 'x');
   }
 
   function sidebarFootText() {
@@ -109,27 +120,94 @@
   }
 
   function sidebar(activeRoute) {
+    const nodes = [];
+    let group = null;
+    for (const item of navItems()) {
+      if (item.group && item.group !== group) {
+        group = item.group;
+        nodes.push(el('div', { class: 'sidebar-group' }, group));
+      }
+      nodes.push(
+        el(
+          'a',
+          {
+            class: U.cn('sidebar-link', isActive(item, activeRoute) && 'is-active'),
+            href: item.route,
+            'aria-current': isActive(item, activeRoute) ? 'page' : null,
+          },
+          icon(item.icon),
+          item.label,
+        ),
+      );
+    }
     return el(
       'aside',
       { class: 'sidebar' },
-      el('div', { class: 'sidebar-brand' }, el('span', { class: 'dot' }, '📐'), 'AdaptiveMath'),
-      el(
-        'nav',
-        { class: 'sidebar-nav' },
-        navItems().map((item) =>
-          el(
-            'a',
-            {
-              class: U.cn('sidebar-link', activeRoute === item.route && 'is-active'),
-              href: item.route,
-            },
-            icon(item.icon),
-            item.label,
-          ),
-        ),
-      ),
+      el('a', { class: 'sidebar-brand', href: '#/', style: { textDecoration: 'none' } }, brandMark(), 'AdaptiveMath'),
+      el('nav', { class: 'sidebar-nav', 'aria-label': 'Điều hướng chính' }, nodes),
       el('div', { class: 'sidebar-foot' }, sidebarFootText()),
     );
+  }
+
+  /** Thanh tab dưới cho điện thoại: 4 mục hay dùng + "Thêm". */
+  function tabbar(activeRoute) {
+    const items = navItems();
+    const tabs = items.filter((i) => i.tab);
+    const rest = items.filter((i) => !i.tab);
+    const restActive = rest.some((i) => isActive(i, activeRoute));
+    const bar = el(
+      'nav',
+      { class: 'tabbar', 'aria-label': 'Điều hướng' },
+      tabs.map((item) =>
+        el(
+          'a',
+          { href: item.route, class: isActive(item, activeRoute) ? 'is-active' : null, 'aria-current': isActive(item, activeRoute) ? 'page' : null },
+          icon(item.icon),
+          item.label,
+        ),
+      ),
+      rest.length
+        ? el(
+            'button',
+            {
+              type: 'button',
+              class: restActive ? 'is-active' : null,
+              onclick: function () {
+                const sheet = el(
+                  'div',
+                  {
+                    class: 'more-sheet',
+                    onclick: function (e) {
+                      if (e.target === sheet) sheet.remove();
+                    },
+                  },
+                  el(
+                    'div',
+                    { role: 'dialog', 'aria-label': 'Mục khác' },
+                    rest.map((item) =>
+                      el(
+                        'a',
+                        {
+                          href: item.route,
+                          class: isActive(item, activeRoute) ? 'is-active' : null,
+                          onclick: () => sheet.remove(),
+                        },
+                        icon(item.icon),
+                        item.label,
+                      ),
+                    ),
+                  ),
+                );
+                document.body.appendChild(sheet);
+                window.addEventListener('hashchange', () => sheet.remove(), { once: true });
+              },
+            },
+            icon('menu'),
+            'Thêm',
+          )
+        : null,
+    );
+    return bar;
   }
 
   /**
@@ -200,7 +278,7 @@
     return el(
       'header',
       { class: 'topbar' },
-      el('div', { class: 'topbar-title' }, title),
+      el('div', { class: 'topbar-title' }, brandMark(), el('span', {}, title)),
       el('div', { class: 'topbar-actions' }, list),
     );
   }
@@ -224,15 +302,13 @@
         topbar(opts.title || 'AdaptiveMath', opts.actions),
         el('div', { class: 'main' }, el('div', { class: 'main-inner stack' }, children)),
       ),
+      tabbar(activeRoute),
     );
   }
 
+  /** Nút "về trang chính" cũ — thanh bên và thanh tab đã có mục này, bỏ để topbar gọn. */
   function homeButton() {
-    return el(
-      'a',
-      { class: 'icon-btn', href: '#/', title: 'Trang chính', 'aria-label': 'Trang chính' },
-      icon('home'),
-    );
+    return null;
   }
 
   // =========================================================================
@@ -297,8 +373,14 @@
     );
   }
 
+  /** Trước đây là khẩu hiệu tiếng Anh ở chân trang — bỏ, chỉ còn khoảng trống. */
   function footerNote() {
-    return el('div', { class: 'footer-note' }, 'Nurturing Human Potential');
+    return null;
+  }
+
+  /** Nhiều số liệu trong một dải gọn (thay cho một lưới thẻ rời). */
+  function statStrip(tiles, cols) {
+    return el('div', { class: 'stat-strip', style: { '--cols': String(cols || tiles.length) } }, tiles);
   }
 
   /** Mastery band chip for a 0..1 value. */
@@ -546,7 +628,7 @@
         mk('polygon', {
           points: series.map((_, i) => pointAt(i, target).join(',')).join(' '),
           fill: 'none',
-          stroke: '#b2f746',
+          stroke: '#d9a91a',
           'stroke-width': 2,
           'stroke-dasharray': '4 4',
         }),
@@ -565,8 +647,8 @@
     svg.appendChild(
       mk('polygon', {
         points: series.map((s, i) => pointAt(i, s.value).join(',')).join(' '),
-        fill: 'rgba(6,78,59,0.18)',
-        stroke: '#064e3b',
+        fill: 'rgba(23,70,58,0.16)',
+        stroke: '#17463a',
         'stroke-width': 2,
         'stroke-linejoin': 'round',
       }),
@@ -575,7 +657,7 @@
     // Vertices + labels.
     for (let i = 0; i < n; i++) {
       const [px, py] = pointAt(i, series[i].value);
-      svg.appendChild(mk('circle', { cx: px, cy: py, r: 3.5, fill: '#064e3b' }));
+      svg.appendChild(mk('circle', { cx: px, cy: py, r: 3.5, fill: '#17463a' }));
 
       const [lx, ly] = pointAt(i, 1.19);
       const text = mk('text', {
@@ -585,7 +667,7 @@
         'dominant-baseline': 'middle',
         'font-size': 9.5,
         'font-weight': 700,
-        fill: '#2b6954',
+        fill: '#536066',
       });
       const label = series[i].label;
       text.textContent = label.length > 16 ? label.slice(0, 15) + '…' : label;
@@ -644,6 +726,8 @@
     pill: pill,
     bar: bar,
     statTile: statTile,
+    statStrip: statStrip,
+    brandMark: brandMark,
     banner: banner,
     empty: empty,
     sectionCard: sectionCard,

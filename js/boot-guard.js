@@ -74,7 +74,7 @@
     root.setAttribute('data-booted', '1');
     root.innerHTML =
       '<div class="auth-screen"><div class="auth-card" style="max-width:34rem">' +
-      '<div class="auth-logo">📐</div>' +
+      '<div class="auth-logo"><span class="brand-mark">x</span></div>' +
       '<h1 class="page-title" style="font-size:1.5rem">' + esc(title) + '</h1>' +
       bodyHtml +
       '</div></div>';

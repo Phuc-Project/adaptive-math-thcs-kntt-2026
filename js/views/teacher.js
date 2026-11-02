@@ -304,6 +304,19 @@
 
     // --- pieces -------------------------------------------------------------
 
+    async function copyCode(btn) {
+      try {
+        await window.navigator.clipboard.writeText(state.cls.code);
+        btn.textContent = 'Đã sao chép';
+        window.setTimeout(function () {
+          btn.textContent = 'Sao chép mã';
+        }, 1500);
+      } catch (err) {
+        window.prompt('Sao chép mã lớp:', state.cls.code);
+      }
+    }
+
+    /** Lớp chưa có ai: mã lớp là thứ duy nhất cần thấy. */
     function codeCard() {
       return el(
         'section',
@@ -311,34 +324,25 @@
         el(
           'div',
           {},
-          el('div', { class: 'section-label', style: { color: '#b2f746' } }, 'Mã tham gia'),
+          el('div', { class: 'next-step-label' }, 'Mã vào lớp'),
           el('div', { class: 'class-code-big' }, state.cls.code),
           el(
             'p',
-            { class: 'muted-sm', style: { color: 'rgba(234,255,245,0.75)', marginTop: '0.4rem' } },
-            'Học sinh nhập mã này ở mục “Lớp học” để vào lớp.',
+            { style: { marginTop: '0.4rem' } },
+            'Viết mã này lên bảng. Học sinh mở mục "Lớp học", nhập mã là vào được lớp.',
           ),
         ),
-        el(
-          'button',
-          {
-            class: 'btn btn-lime',
-            onclick: async function (e) {
-              const btn = e.currentTarget;
-              try {
-                await window.navigator.clipboard.writeText(state.cls.code);
-                btn.textContent = 'Đã sao chép';
-                window.setTimeout(function () {
-                  btn.textContent = 'Sao chép mã';
-                }, 1500);
-              } catch (err) {
-                // Clipboard needs a secure context; the code is on screen anyway.
-                window.prompt('Sao chép mã lớp:', state.cls.code);
-              }
-            },
-          },
-          'Sao chép mã',
-        ),
+        el('button', { class: 'btn btn-lime', onclick: (e) => copyCode(e.currentTarget) }, 'Sao chép mã'),
+      );
+    }
+
+    function codeInline() {
+      return el(
+        'p',
+        { class: 'code-inline' },
+        'Mã vào lớp: ',
+        el('strong', { class: 'class-code' }, state.cls.code),
+        el('button', { class: 'link-btn', onclick: (e) => copyCode(e.currentTarget) }, 'Sao chép mã'),
       );
     }
 
@@ -348,15 +352,43 @@
         (m) => m.lastActiveAt && Date.now() - m.lastActiveAt.getTime() < 7 * 86400000,
       ).length;
       const diagnosed = ms.filter((m) => m.hasDiagnostic).length;
-      const pendingHelp = ms.filter((m) => m.help && m.help.status === 'pending').length;
+      const errors = ms.reduce((n, m) => n + (m.unresolvedErrors || 0), 0);
+      return ui.statStrip(
+        [
+          ui.statTile(String(ms.length), 'học sinh trong lớp'),
+          ui.statTile(String(active7d), 'em học trong 7 ngày qua'),
+          ui.statTile(diagnosed + '/' + ms.length, 'em đã kiểm tra đầu vào'),
+          ui.statTile(String(errors), 'lỗi sai chưa sửa (cả lớp)'),
+        ],
+        4,
+      );
+    }
 
+    /** Câu hỏi học sinh gửi — việc chính của giáo viên, đặt lên đầu. */
+    function helpSection() {
+      const withHelp = state.members.filter((m) => m.help && m.help.message);
+      if (!withHelp.length) return null;
+      const pending = withHelp.filter((m) => m.help.status === 'pending');
+      const answered = withHelp.filter((m) => m.help.status !== 'pending');
       return el(
         'section',
-        { class: 'grid-3' },
-        ui.statTile(String(ms.length), 'Học sinh trong lớp'),
-        ui.statTile(String(active7d), 'Hoạt động trong 7 ngày'),
-        ui.statTile(diagnosed + '/' + ms.length, 'Đã kiểm tra đầu vào'),
-        ui.statTile(String(pendingHelp), 'Đang cần hỗ trợ'),
+        { class: 'card help-section stack-sm' },
+        el(
+          'h2',
+          { class: 'card-title' },
+          pending.length ? 'Học sinh đang hỏi (' + pending.length + ')' : 'Câu hỏi của học sinh',
+        ),
+        pending.length
+          ? el('div', { class: 'stack-sm' }, pending.map(helpBlock))
+          : el('p', { class: 'muted-sm' }, 'Không có câu hỏi nào đang chờ.'),
+        answered.length
+          ? el(
+              'details',
+              { class: 'help-answered' },
+              el('summary', {}, 'Đã trả lời (' + answered.length + ')'),
+              el('div', { class: 'stack-sm' }, answered.map(helpBlock)),
+            )
+          : null,
       );
     }
 
@@ -408,85 +440,103 @@
         el(
           'div',
           { class: 'row' },
-          ui.pill(pending ? 'Cần hỗ trợ' : 'Đã trả lời', pending ? 'amber' : 'green', 'help'),
-          el('span', { class: 'muted-sm' }, U.relativeTime(U.toDate(m.help.askedAt))),
+          el('strong', {}, m.displayName || m.email.split('@')[0]),
+          el('span', { class: 'muted-sm' }, 'hỏi ' + U.relativeTime(U.toDate(m.help.askedAt))),
         ),
         el('p', { class: 'help-message' }, m.help.message),
         m.help.reply
-          ? el('p', { class: 'help-answer' }, el('strong', {}, 'Bạn đã trả lời: '), m.help.reply)
+          ? el('p', { class: 'help-answer' }, el('strong', {}, 'Thầy cô trả lời: '), m.help.reply)
           : null,
         replyBox ||
           (pending || !m.help.reply
             ? el(
                 'button',
                 {
-                  class: 'btn btn-ghost btn-sm',
+                  class: 'btn btn-primary btn-sm',
                   onclick: function () {
                     state.replyFor = m.uid;
                     state.replyText = m.help.reply || '';
                     render();
+                    const ta = U.qs('.help-reply textarea', container);
+                    if (ta) ta.focus();
                   },
                 },
-                U.icon('reply'),
                 'Trả lời',
               )
             : null),
       );
     }
 
-    function memberRow(m) {
-      const totalTopics = m.grade ? AM.topics.getTopicsByGrade(m.grade).length : 0;
-      const ratio = totalTopics > 0 ? m.masteredTopics / totalTopics : 0;
-
+    function rosterTable(members) {
+      const head = el(
+        'tr',
+        {},
+        el('th', { scope: 'col' }, 'Học sinh'),
+        el('th', { scope: 'col' }, 'Kiểm tra đầu vào'),
+        el('th', { scope: 'col' }, 'Chủ đề thành thạo'),
+        el('th', { scope: 'col', class: 'num' }, 'Câu đã làm'),
+        el('th', { scope: 'col', class: 'num' }, 'Lỗi chưa sửa'),
+        el('th', { scope: 'col' }, 'Học gần nhất'),
+        el('th', { scope: 'col' }, el('span', { class: 'sr-only' }, 'Thao tác')),
+      );
+      const rows = members.map(function (m) {
+        const totalTopics = m.grade ? AM.topics.getTopicsByGrade(m.grade).length : 0;
+        const ratio = totalTopics > 0 ? m.masteredTopics / totalTopics : 0;
+        const pending = m.help && m.help.status === 'pending';
+        const inactive = !m.lastActiveAt || Date.now() - m.lastActiveAt.getTime() > 7 * 86400000;
+        return el(
+          'tr',
+          { class: pending ? 'is-asking' : null },
+          el(
+            'td',
+            { 'data-label': 'Học sinh' },
+            el('span', { class: 'roster-name' }, m.displayName || m.email.split('@')[0]),
+            el('span', { class: 'muted-sm', style: { display: 'block' } }, m.grade ? C.GRADE_LABELS[m.grade] : 'chưa làm hồ sơ'),
+            pending ? el('span', { class: 'asking-tag', style: { display: 'block' } }, 'đang hỏi bài') : null,
+          ),
+          el(
+            'td',
+            { 'data-label': 'Kiểm tra đầu vào' },
+            m.hasDiagnostic ? el('span', { class: 'ok-text' }, 'Đã làm') : el('span', { class: 'warn-text' }, 'Chưa làm'),
+          ),
+          el(
+            'td',
+            { 'data-label': 'Thành thạo' },
+            totalTopics > 0
+              ? el('span', { class: 'roster-meter' }, ui.bar(ratio, 'kha'), el('span', {}, m.masteredTopics + '/' + totalTopics))
+              : '—',
+          ),
+          el('td', { 'data-label': 'Câu đã làm', class: 'num' }, String(m.totalQuestions)),
+          el(
+            'td',
+            { 'data-label': 'Lỗi chưa sửa', class: U.cn('num', m.unresolvedErrors > 0 && 'warn-text') },
+            String(m.unresolvedErrors),
+          ),
+          el(
+            'td',
+            { 'data-label': 'Học gần nhất', class: inactive ? 'warn-text' : null },
+            U.relativeTime(m.lastActiveAt),
+          ),
+          el(
+            'td',
+            { class: 'roster-actions' },
+            el(
+              'button',
+              {
+                class: 'icon-btn',
+                title: 'Xoá ' + (m.displayName || m.email) + ' khỏi lớp',
+                'aria-label': 'Xoá khỏi lớp',
+                onclick: () => removeStudent(m),
+              },
+              U.icon('person_remove'),
+            ),
+          ),
+        );
+      });
       return el(
         'div',
-        { class: 'list-row member-row' },
-        el(
-          'span',
-          { class: 'avatar-dot' },
-          (m.displayName || m.email || '?').trim().charAt(0).toUpperCase(),
-        ),
-        el(
-          'span',
-          { class: 'grow' },
-          el(
-            'span',
-            { class: 'title', style: { display: 'block' } },
-            m.displayName || m.email.split('@')[0],
-          ),
-          el(
-            'span',
-            { class: 'muted-sm' },
-            (m.grade ? C.GRADE_LABELS[m.grade] : 'chưa chọn lớp') +
-              ' · hoạt động ' +
-              U.relativeTime(m.lastActiveAt),
-          ),
-          el(
-            'span',
-            { class: 'row', style: { marginTop: '0.5rem' } },
-            m.hasDiagnostic
-              ? ui.pill(m.masteredTopics + '/' + totalTopics + ' thành thạo', 'green')
-              : ui.pill('chưa kiểm tra đầu vào', 'amber'),
-            ui.pill('Lv' + m.level + ' · ' + m.xp + ' XP', 'lime'),
-            m.currentStreak > 0 ? ui.pill('🔥 ' + m.currentStreak + ' ngày', 'rose') : null,
-            ui.pill(m.totalQuestions + ' câu', 'sky'),
-            m.unresolvedErrors > 0 ? ui.pill(m.unresolvedErrors + ' lỗi chưa sửa', 'amber') : null,
-          ),
-          totalTopics > 0
-            ? el('span', { class: 'member-bar' }, ui.bar(ratio, 'kha'))
-            : null,
-          helpBlock(m),
-        ),
-        el(
-          'button',
-          {
-            class: 'icon-btn',
-            title: 'Xoá khỏi lớp',
-            'aria-label': 'Xoá khỏi lớp',
-            onclick: () => removeStudent(m),
-          },
-          U.icon('person_remove'),
-        ),
+        { class: 'roster-wrap' },
+        el('table', { class: 'roster' }, el('thead', {}, head), el('tbody', {}, rows)),
       );
     }
 
@@ -502,19 +552,19 @@
           },
         },
         el('option', { value: 'name' }, 'Tên A→Z'),
-        el('option', { value: 'needsHelp' }, 'Cần hỗ trợ trước'),
-        el('option', { value: 'lastActive' }, 'Mới hoạt động'),
+        el('option', { value: 'needsHelp' }, 'Cần giúp đỡ trước'),
+        el('option', { value: 'lastActive' }, 'Mới học gần đây'),
         el('option', { value: 'mastered' }, 'Thành thạo nhiều nhất'),
-        el('option', { value: 'xp' }, 'XP cao nhất'),
+        el('option', { value: 'xp' }, 'Điểm kinh nghiệm cao nhất'),
       );
       sortSelect.value = state.sortBy;
 
       return el(
         'div',
-        { class: 'card card-tight row' },
-        el('span', { class: 'grow muted-sm' }, 'Sắp xếp theo'),
+        { class: 'row roster-tools' },
+        el('h2', { class: 'card-title grow' }, 'Danh sách lớp'),
+        el('label', { class: 'muted-sm' }, 'Sắp xếp'),
         sortSelect,
-        el('button', { class: 'btn btn-ghost btn-sm', onclick: load }, U.icon('refresh'), 'Tải lại'),
       );
     }
 
@@ -535,20 +585,12 @@
         body = el(
           'div',
           { class: 'stack-sm' },
-          codeCard(),
-          summaryTiles(),
+          members.length === 0 ? codeCard() : null,
+          helpSection(),
+          members.length ? summaryTiles() : null,
           members.length === 0
-            ? ui.empty(
-                '👋',
-                'Chưa có học sinh nào',
-                'Đưa mã ' + state.cls.code + ' cho học sinh để các em vào lớp.',
-              )
-            : el(
-                'div',
-                { class: 'stack-sm' },
-                sortBar(),
-                el('div', { class: 'list' }, members.map(memberRow)),
-              ),
+            ? null
+            : el('section', { class: 'card stack-sm' }, sortBar(), rosterTable(members)),
         );
       }
 
@@ -585,6 +627,7 @@
               '← Danh sách lớp',
             ),
             el('h1', { class: 'page-title' }, state.cls ? state.cls.name : 'Lớp học'),
+            state.cls && state.members.length ? codeInline() : null,
           ),
           body,
           ui.footerNote(),

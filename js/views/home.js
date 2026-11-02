@@ -13,47 +13,67 @@
   const ui = AM.ui;
   const C = AM.const;
 
-  function heroCard(ctx) {
+  function activityHref(act) {
+    return act.type === 'theory'
+      ? '#/theory?topic=' + encodeURIComponent(act.topicId)
+      : '#/practice?topic=' +
+          encodeURIComponent(act.topicId) +
+          '&levels=' +
+          encodeURIComponent((act.levels || ['N', 'H']).join(',')) +
+          '&activityId=' +
+          encodeURIComponent(act.activityId) +
+          '&count=' +
+          (act.questionCount || 5);
+  }
+
+  /**
+   * Khối "việc tiếp theo": MỘT việc, MỘT nút. Học sinh mở app là biết bấm vào đâu.
+   */
+  function heroCard(ctx, today) {
     let title;
     let body;
     let cta;
     let href;
 
     if (!ctx.hasProfile) {
-      title = 'Bắt đầu từ đây';
-      body =
-        'Cho hệ thống biết lớp, mục tiêu và quỹ thời gian của bạn — mất khoảng 1 phút. ' +
-        'Sau đó bạn sẽ làm bài kiểm tra đầu vào để hệ thống hiểu bạn đang ở đâu.';
+      title = 'Cho thầy cô biết em học lớp mấy';
+      body = 'Chọn lớp, mục tiêu và thời gian học mỗi ngày — khoảng 1 phút. Sau đó em làm bài kiểm tra đầu vào để hệ thống biết em đang vững và còn hổng ở đâu.';
       cta = 'Thiết lập hồ sơ';
       href = '#/onboarding';
     } else if (!ctx.hasDiagnostic) {
-      title = 'Làm bài kiểm tra đầu vào theo chương';
-      body =
-        'Chọn chương bạn đã học: bài kiểm tra thích ứng đi qua từng chủ đề của chương theo thang ' +
-        'Nhận biết → Thông hiểu → Vận dụng để xác định bạn đang vững ở đâu và hổng ở đâu. ' +
-        'Xong chương nào, hồ sơ năng lực cập nhật ngay chương đó.';
-      cta = 'Bắt đầu kiểm tra';
+      title = 'Làm bài kiểm tra đầu vào';
+      body = 'Chọn một chương em đã học. Câu hỏi tự khó dần hoặc dễ dần theo câu trả lời của em, khoảng 15–25 phút mỗi chương. Làm xong chương nào, lộ trình của chương đó có ngay.';
+      cta = 'Chọn chương để kiểm tra';
       href = '#/diagnostic';
     } else {
-      const mastered = ctx.tree ? ctx.tree.stageCounts['ra-hoa'] : 0;
-      title = 'Tiếp tục lộ trình của bạn';
-      body =
-        'Bạn đã có hồ sơ năng lực. ' +
-        (mastered > 0
-          ? 'Đã có ' + mastered + ' chủ đề ở giai đoạn "Ra hoa – kết quả". '
-          : '') +
-        'Xem lộ trình hôm nay hoặc mở hồ sơ để biết cần củng cố phần nào.';
-      cta = 'Xem lộ trình';
-      href = '#/learning-path';
+      const completed = new Set(ctx.learner.completedActivities);
+      const next = today.find((i) => !completed.has(i.activity.activityId));
+      if (next) {
+        const act = next.activity;
+        title = act.topicTitle;
+        body =
+          C.ACTIVITY_LABELS[act.type] +
+          (act.questionCount ? ', ' + act.questionCount + ' câu' : '') +
+          ', khoảng ' + act.estimatedMinutes + ' phút.';
+        cta = act.type === 'theory' ? 'Bắt đầu đọc' : 'Bắt đầu làm';
+        href = activityHref(act);
+      } else {
+        title = ctx.path ? 'Xong việc hôm nay rồi' : 'Tạo lộ trình học';
+        body = ctx.path
+          ? 'Muốn học thêm thì làm bài tập theo chủ đề em còn yếu.'
+          : 'Hệ thống xếp bài theo kết quả kiểm tra của em và thời gian em có mỗi ngày.';
+        cta = ctx.path ? 'Làm thêm bài tập' : 'Mở lộ trình học';
+        href = ctx.path ? '#/exercises' : '#/learning-path';
+      }
     }
 
     return el(
       'section',
-      { class: 'card card-dark stack-sm' },
-      el('div', { class: 'section-label', style: { color: '#b2f746' } }, 'Bước tiếp theo'),
-      el('h2', { class: 'page-title', style: { color: '#fff' } }, title),
-      el('p', { style: { color: 'rgba(234,255,245,0.8)', lineHeight: '1.7', fontWeight: 500 } }, body),
-      el('div', { class: 'row' }, el('a', { class: 'btn btn-lime', href: href }, cta, U.icon('trending_flat'))),
+      { class: 'card card-dark next-step' },
+      el('div', { class: 'next-step-label' }, ctx.hasDiagnostic ? 'Việc tiếp theo' : 'Bắt đầu'),
+      el('h2', { class: 'next-step-title' }, title),
+      el('p', { class: 'next-step-body' }, body),
+      el('a', { class: 'btn btn-lime', href: href }, cta),
     );
   }
 
@@ -64,8 +84,8 @@
     if (total === 0) return null;
     const recs = AM.exercises.recommend(ctx, { topics: 2, perTopic: 1 });
     return ui.sectionCard(
-      [U.icon('library_books'), 'Bài tập cá nhân hóa'],
-      total + ' bài tập ' + C.GRADE_LABELS[ctx.profile.grade] + ', chọn theo đúng chỗ bạn còn yếu.',
+      'Bài tập nên làm',
+      'Chủ đề em đang yếu nhất trong ' + total + ' bài tập ' + C.GRADE_LABELS[ctx.profile.grade] + '.',
       recs.length
         ? el(
             'div',
@@ -84,65 +104,28 @@
       el(
         'div',
         { class: 'row' },
-        el('a', { class: 'btn btn-lime btn-sm', href: '#/exercises' }, 'Làm bài tập gợi ý', U.icon('trending_flat')),
+        el('a', { class: 'btn btn-outline btn-sm', href: '#/exercises' }, 'Xem tất cả bài tập'),
       ),
     );
   }
 
-  function todayCard(ctx) {
-    if (!ctx.hasDiagnostic) return null;
-
-    const items = AM.today.computeTodayActivities(ctx.path, ctx.learner);
+  function todayCard(ctx, items) {
+    if (!ctx.hasDiagnostic || items.length === 0) return null;
     const completed = new Set(ctx.learner.completedActivities);
-
-    if (items.length === 0) {
-      return ui.sectionCard(
-        [U.icon('task_alt'), 'Hôm nay cần làm'],
-        null,
-        el(
-          'p',
-          { class: 'muted' },
-          ctx.path
-            ? 'Không còn việc nào cho hôm nay. Bạn có thể luyện thêm từ lộ trình.'
-            : 'Chưa có lộ trình. Mở trang Lộ trình học để hệ thống tạo cho bạn.',
-        ),
-        el(
-          'div',
-          { class: 'row' },
-          el('a', { class: 'btn btn-ghost btn-sm', href: '#/learning-path' }, 'Mở lộ trình'),
-        ),
-      );
-    }
-
+    const doneCount = items.filter((i) => completed.has(i.activity.activityId)).length;
     return ui.sectionCard(
-      [U.icon('task_alt'), 'Hôm nay cần làm (' + items.length + ')'],
-      'Ưu tiên ôn tập theo lịch SRS trước, rồi tới lộ trình.',
-      el(
-        'div',
-        { class: 'list' },
-        items.map((item) => activityRow(item.activity, item.reason, completed)),
-      ),
+      'Hôm nay (' + doneCount + '/' + items.length + ' việc)',
+      'Bài ôn đến hạn được xếp trước, sau đó là bài trong lộ trình.',
+      el('div', { class: 'list' }, items.map((item) => activityRow(item.activity, completed))),
     );
   }
 
-  function activityRow(act, reason, completedSet) {
+  function activityRow(act, completedSet) {
     const done = completedSet.has(act.activityId);
-    const href =
-      act.type === 'theory'
-        ? '#/theory?topic=' + encodeURIComponent(act.topicId)
-        : '#/practice?topic=' +
-          encodeURIComponent(act.topicId) +
-          '&levels=' +
-          encodeURIComponent((act.levels || ['N', 'H']).join(',')) +
-          '&activityId=' +
-          encodeURIComponent(act.activityId) +
-          '&count=' +
-          (act.questionCount || 5);
-
     return el(
       'a',
-      { class: U.cn('activity', done && 'is-done'), href: href },
-      el('span', { class: 'type-dot type-' + act.type }, U.icon(C.ACTIVITY_ICONS[act.type])),
+      { class: U.cn('activity', done && 'is-done'), href: activityHref(act) },
+      el('span', { class: 'type-dot type-' + act.type }, U.icon(done ? 'check' : C.ACTIVITY_ICONS[act.type])),
       el(
         'span',
         { class: 'grow' },
@@ -151,14 +134,14 @@
           'span',
           { class: 'muted-sm' },
           C.ACTIVITY_LABELS[act.type] +
-            (act.levels && act.levels.length ? ' · mức ' + act.levels.join(', ') : '') +
-            ' · ' +
+            (act.levels && act.levels.length ? ', mức ' + act.levels.map((l) => C.LEVEL_LABELS[l] || l).join(', ').toLowerCase() : '') +
+            (act.questionCount ? ', ' + act.questionCount + ' câu' : '') +
+            ', khoảng ' +
             act.estimatedMinutes +
-            ' phút — ' +
-            reason,
+            ' phút',
         ),
       ),
-      done ? U.icon('check_circle') : U.icon('chevron_right'),
+      done ? el('span', { class: 'muted-sm' }, 'Đã xong') : U.icon('chevron_right'),
     );
   }
 
@@ -167,8 +150,8 @@
     const stages = C.TREE_STAGES;
 
     return ui.sectionCard(
-      [U.icon('park'), 'Cây tri thức'],
-      'Độ vững của thân cây: ' + U.pct(ctx.tree.trunkStrength) + '.',
+      'Cây tri thức',
+      'Kiến thức nền của em vững ' + U.pct(ctx.tree.trunkStrength) + '.',
       el(
         'div',
         { class: 'row' },
@@ -190,21 +173,14 @@
     const totalTopics = AM.topics.getTopicsByGrade(ctx.profile.grade).length;
     const stats = AM.today.computeProgressStats(ctx.path, ctx.learner, totalTopics);
     const g = ctx.learner.gamification;
-
-    return el(
-      'section',
-      { class: 'grid-3' },
-      ui.statTile(String(C.xpToLevel(g.xp)), 'Cấp độ · ' + g.xp + ' XP'),
-      ui.statTile(g.currentStreak + ' ngày', 'Chuỗi hiện tại'),
-      ui.statTile(stats.masteredTopics + '/' + totalTopics, 'Chủ đề thành thạo'),
-      ui.statTile(String(g.totalQuestionsAttempted), 'Câu đã làm'),
-      ui.statTile(String(stats.totalSessions), 'Phiên luyện tập'),
-      ui.statTile(
-        stats.pathDaysTotal > 0
-          ? stats.pathDaysCompleted + '/' + stats.pathDaysTotal
-          : '—',
-        'Hoạt động lộ trình',
-      ),
+    return ui.statStrip(
+      [
+        ui.statTile(g.currentStreak + ' ngày', 'học liên tiếp'),
+        ui.statTile(String(g.totalQuestionsAttempted), 'câu đã làm'),
+        ui.statTile(stats.masteredTopics + '/' + totalTopics, 'chủ đề đã thành thạo'),
+        ui.statTile('Cấp ' + C.xpToLevel(g.xp), g.xp + ' điểm kinh nghiệm'),
+      ],
+      4,
     );
   }
 
@@ -212,7 +188,7 @@
     const earned = ctx.learner.gamification.badges;
     if (!earned.length) return null;
     return ui.sectionCard(
-      [U.icon('workspace_premium'), 'Huy hiệu'],
+      'Huy hiệu',
       null,
       el(
         'div',
@@ -228,8 +204,8 @@
   function calendarCard(ctx) {
     const dates = AM.today.getPracticeDatesThisMonth(ctx.learner);
     return ui.sectionCard(
-      [U.icon('calendar_month'), 'Lịch luyện tập tháng này'],
-      dates.size + ' ngày đã học trong tháng.',
+      'Ngày đã học trong tháng',
+      dates.size ? dates.size + ' ngày.' : 'Chưa có ngày nào — làm một bài hôm nay nhé.',
       ui.miniCalendar(dates),
     );
   }
@@ -243,61 +219,53 @@
     );
   }
 
-  function view(params, ctx) {
-    const resetBtn = el(
+  function firstName() {
+    const n = String(AM.auth.displayName() || '').trim().split(/\s+/);
+    return n[n.length - 1] || '';
+  }
+
+  function resetLink() {
+    return el(
       'button',
       {
-        class: 'icon-btn',
-        title: 'Đặt lại toàn bộ dữ liệu',
+        class: 'link-btn muted-sm reset-link',
         onclick: function () {
           const ok = window.confirm(
-            'Đặt lại toàn bộ dữ liệu học tập?\n\n' +
+            'Xoá toàn bộ dữ liệu học tập?\n\n' +
               'Hồ sơ, kết quả kiểm tra, lộ trình và sổ tay lỗi sẽ bị xoá — ' +
-              'cả trên máy này lẫn trên tài khoản của bạn.\n\n' +
-              'Hành động này không thể hoàn tác.',
+              'cả trên máy này lẫn trên tài khoản của em.\n\n' +
+              'Không thể khôi phục.',
           );
           if (!ok) return;
-          // Loud clear: the deletion propagates to Firestore too, which is
-          // what "đặt lại" should mean for an account-backed app.
           AM.store.clearAll();
           AM.router.render();
         },
       },
-      U.icon('restart_alt'),
+      'Xoá dữ liệu học tập và làm lại từ đầu',
     );
+  }
 
-    const greeting = ctx.hasProfile
-      ? 'Xin chào, học sinh ' + C.GRADE_LABELS[ctx.profile.grade] + '!'
-      : 'Chào mừng đến AdaptiveMath!';
-
-    const goalLabel = ctx.profile
-      ? (C.GOAL_OPTIONS.find((g) => g.value === ctx.profile.goal) || {}).label
-      : null;
-
+  function view(params, ctx) {
+    const name = firstName();
+    const greeting = name ? 'Chào ' + name : 'Chào em';
+    const goalLabel = ctx.profile ? (C.GOAL_OPTIONS.find((g) => g.value === ctx.profile.goal) || {}).label : null;
     const subtitle = ctx.hasProfile
-      ? 'Sẵn sàng cho ' +
-        ctx.profile.dailyMinutes +
-        ' phút học tập trung hôm nay để tiến gần hơn tới mục tiêu ' +
-        String(goalLabel || '').toLowerCase() +
-        ' chứ?'
-      : 'Bắt đầu bằng cách nhập lớp, mục tiêu và thời gian học để hệ thống chuẩn bị bài kiểm tra đầu vào phù hợp.';
+      ? C.GRADE_LABELS[ctx.profile.grade] + '. Mục tiêu: ' + String(goalLabel || '').toLowerCase() + ', ' + ctx.profile.dailyMinutes + ' phút mỗi ngày.'
+      : 'Học Toán THCS theo đúng chỗ em còn yếu.';
+    const today = ctx.hasDiagnostic ? AM.today.computeTodayActivities(ctx.path, ctx.learner) : [];
 
     return ui.page(
-      { title: 'AdaptiveMath', activeRoute: '#/', actions: [resetBtn] },
+      { title: 'Trang chính', activeRoute: '#/' },
       bankWarning(),
-      el(
-        'section',
-        {},
-        el('h1', { class: 'page-title' }, greeting),
-        el('p', { class: 'page-sub' }, subtitle),
-      ),
-      heroCard(ctx),
-      todayCard(ctx),
-      exercisesCard(ctx),
+      el('section', {}, el('h1', { class: 'page-title' }, greeting), el('p', { class: 'page-sub' }, subtitle)),
+      AM.trial ? AM.trial.homeCard(ctx) : null,
+      heroCard(ctx, today),
+      todayCard(ctx, today),
       statsCard(ctx),
+      exercisesCard(ctx),
       el('div', { class: 'grid-2' }, treeCard(ctx), calendarCard(ctx)),
       badgesCard(ctx),
-      ui.footerNote(),
+      ctx.hasProfile ? el('div', {}, resetLink()) : null,
     );
   }
 

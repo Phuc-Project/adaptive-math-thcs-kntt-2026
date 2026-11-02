@@ -22,6 +22,8 @@
     // The landing page links here with ?mode=signup for its "create account"
     // buttons, so the form opens on the step the visitor actually asked for.
     const requested = params && params.mode;
+    // Đến từ nút "Học thử" ở trang giới thiệu: đăng nhập xong mở bài dùng thử.
+    if (params && params.next === 'thu') AM.router.rememberNext('/thu');
     const initialMode =
       requested === 'signup' || requested === 'reset' ? requested : 'signin';
 
@@ -193,7 +195,7 @@
       const body = el(
         'div',
         { class: 'auth-card stack-sm' },
-        el('div', { class: 'auth-logo' }, '📐'),
+        el('div', { class: 'auth-logo' }, AM.ui.brandMark()),
         el('h1', { class: 'page-title' }, title),
         el('p', { class: 'muted', style: { lineHeight: 1.65 } }, subtitle),
 
@@ -224,10 +226,10 @@
                   fontWeight: '600',
                   padding: '10px 16px',
                   borderRadius: '12px',
-                  borderColor: '#cbd5e1',
+                  borderColor: 'var(--rule-strong)',
                   background: '#ffffff',
-                  color: '#1e293b',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  color: 'var(--ink-strong)',
+                  
                   cursor: 'pointer',
                   marginTop: '0.5rem',
                   marginBottom: '0.5rem',
@@ -257,16 +259,14 @@
                   alignItems: 'center',
                   gap: '12px',
                   margin: '0.5rem 0 1rem',
-                  color: '#94a3b8',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.8px',
+                  color: 'var(--muted-soft)',
+                  fontSize: '0.85rem',
+                  fontWeight: '500',
                 },
               },
-              el('div', { style: { height: '1px', background: '#e2e8f0', flex: '1' } }),
-              el('span', {}, 'Hoặc bằng Email'),
-              el('div', { style: { height: '1px', background: '#e2e8f0', flex: '1' } }),
+              el('div', { style: { height: '1px', background: 'var(--rule)', flex: '1' } }),
+              el('span', {}, 'hoặc dùng email'),
+              el('div', { style: { height: '1px', background: 'var(--rule)', flex: '1' } }),
             )
           : null,
 
@@ -339,7 +339,7 @@
           el(
             'p',
             { class: 'auth-foot' },
-            'AdaptiveMath · Nền tảng học Toán THCS lớp 6, 7, 8, 9 theo Chương trình GDPT 2018',
+            'AdaptiveMath — Toán THCS lớp 6 đến lớp 9, Chương trình GDPT 2018.',
           ),
         ),
       );

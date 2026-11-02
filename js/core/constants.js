@@ -74,6 +74,40 @@
     unknown: 'Chưa phân loại',
   };
 
+  // ---- Độ dài một buổi luyện tập ----------------------------------------
+  //
+  // Thời gian và số câu phải khớp nhau: trước đây mỗi buổi luôn là 5 câu nhưng
+  // lộ trình tính 15 phút, nên học sinh làm xong trong vài phút rồi không còn gì
+  // làm. Giờ số câu đặt theo lựa chọn của học sinh (hoặc tự động theo thời gian
+  // học mỗi ngày) và số phút được tính ra từ số câu.
+  //
+  // Mỗi chủ đề có 16 câu trắc nghiệm (4 câu mỗi mức) nên tối đa 15 câu/buổi để
+  // không lặp câu trong cùng một buổi.
+  const MINUTES_PER_QUESTION = 1.5;
+  const SESSION_LENGTHS = [5, 10, 15];
+  const SESSION_LENGTH_OPTIONS = [
+    { value: 'auto', label: 'Tự động', description: 'Theo thời gian học mỗi ngày của em.' },
+    { value: 5, label: '5 câu', description: 'Khoảng 8 phút — buổi ngắn.' },
+    { value: 10, label: '10 câu', description: 'Khoảng 15 phút.' },
+    { value: 15, label: '15 câu', description: 'Khoảng 23 phút — buổi dài.' },
+  ];
+
+  /** Số câu tự động: mỗi buổi luyện tập chiếm khoảng 1/3 thời gian học mỗi ngày. */
+  function autoSessionQuestions(dailyMinutes) {
+    const n = Math.round((Number(dailyMinutes) || 45) / 3 / MINUTES_PER_QUESTION);
+    return Math.max(5, Math.min(15, n));
+  }
+
+  function sessionQuestionCount(profile) {
+    const v = profile && profile.sessionLength;
+    if (SESSION_LENGTHS.indexOf(v) !== -1) return v;
+    return autoSessionQuestions(profile && profile.dailyMinutes);
+  }
+
+  function minutesForQuestions(n) {
+    return Math.max(5, Math.round((Number(n) || 0) * MINUTES_PER_QUESTION));
+  }
+
   const CAT_CONFIG = {
     minItems: 15,
     maxItems: 50,
@@ -167,7 +201,7 @@
     { id: 'q-500', label: 'Thiên lý', icon: '🏆', description: 'Trả lời 500 câu hỏi' },
     { id: 'first-mastery', label: 'Master đầu tiên', icon: '⭐', description: 'Thành thạo chủ đề đầu tiên (BKT ≥ 85%)' },
     { id: 'perfect-assessment', label: 'Hoàn hảo', icon: '💯', description: '100% đúng trong mini assessment' },
-    { id: 'review-10', label: 'Ôn tập tốt', icon: '📖', description: 'Hoàn thành 10 phiên ôn tập SRS' },
+    { id: 'review-10', label: 'Ôn tập tốt', icon: '📖', description: 'Hoàn thành 10 phiên ôn tập' },
   ];
 
   // ---- Learning path (types/learningPath.ts) -----------------------------
@@ -190,6 +224,12 @@
     GRADE_LABELS: GRADE_LABELS,
     GOAL_OPTIONS: GOAL_OPTIONS,
     DAILY_MINUTES_OPTIONS: DAILY_MINUTES_OPTIONS,
+    MINUTES_PER_QUESTION: MINUTES_PER_QUESTION,
+    SESSION_LENGTHS: SESSION_LENGTHS,
+    SESSION_LENGTH_OPTIONS: SESSION_LENGTH_OPTIONS,
+    autoSessionQuestions: autoSessionQuestions,
+    sessionQuestionCount: sessionQuestionCount,
+    minutesForQuestions: minutesForQuestions,
     SELF_LEVEL_OPTIONS: SELF_LEVEL_OPTIONS,
     LADDER_ORDER: LADDER_ORDER,
     LEVEL_LABELS: LEVEL_LABELS,

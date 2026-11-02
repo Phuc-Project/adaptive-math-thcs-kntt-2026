@@ -205,11 +205,11 @@
 
       let reason;
       if (row.source === 'default') {
-        reason = 'Chưa có dữ liệu kiểm tra cho chủ đề này — bắt đầu ở mức Thông hiểu.';
+        reason = 'Em chưa kiểm tra chủ đề này nên bắt đầu ở mức Thông hiểu.';
       } else {
         reason =
-          'Mức hiện tại ' + U.pct(row.mastery) + ' (mục tiêu ' + U.pct(target) + ') → ' +
-          'chọn bài mức ' + levels.map((l) => AM.const.LEVEL_LABELS[l]).join(' / ') + '.';
+          'Em đang đạt ' + U.pct(row.mastery) + ', mục tiêu ' + U.pct(target) + ', nên làm bài mức ' +
+          levels.map((l) => AM.const.LEVEL_LABELS[l].toLowerCase()).join(' và ') + '.';
       }
       return {
         topic: row.topic,

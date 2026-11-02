@@ -53,7 +53,7 @@
         ? el(
             'details',
             { class: 'debug' },
-            el('summary', {}, 'Lời giải'),
+            el('summary', {}, block.type === 'dang' ? 'Xem ví dụ' : 'Lời giải'),
             AM.latex.render(block.solution, 'qprompt'),
           )
         : null,
@@ -83,6 +83,10 @@
       );
     }
 
+    const trial = AM.trial && AM.trial.isTrial(params);
+    const practiceHref = trial
+      ? AM.trial.href.practice
+      : '#/practice?topic=' + encodeURIComponent(topicId) + '&levels=N,H';
     const theory = AM.bank.getTheory(topicId);
     const knowledgeBlocks = theory ? theory.knowledgeBlocks : [];
     const methodBlocks = theory ? theory.methodBlocks : [];
@@ -107,7 +111,7 @@
             'a',
             {
               class: 'btn btn-primary',
-              href: '#/practice?topic=' + encodeURIComponent(topicId) + '&levels=N,H&count=5',
+              href: '#/practice?topic=' + encodeURIComponent(topicId) + '&levels=N,H',
             },
             'Chuyển sang luyện tập',
           ),
@@ -117,7 +121,8 @@
     }
 
     return ui.page(
-      { title: 'Lý thuyết', activeRoute: '#/learning-path', actions: [ui.homeButton()] },
+      { title: 'Lý thuyết', activeRoute: trial ? '#/thu' : '#/learning-path', actions: [ui.homeButton()] },
+      trial ? AM.trial.crumb(1, 'Đọc lý thuyết') : null,
       el(
         'section',
         {},
@@ -126,11 +131,13 @@
         el(
           'p',
           { class: 'page-sub' },
-          knowledgeBlocks.length +
-            ' khối kiến thức · ' +
-            methodBlocks.length +
-            ' khối phương pháp · biên soạn: ' +
-            topic.teacher,
+          trial
+            ? 'Đọc từ trên xuống. Ở mỗi ví dụ, tự làm ra vở trước rồi mới bấm "Lời giải" để đối chiếu.'
+            : knowledgeBlocks.length +
+                ' khối kiến thức · ' +
+                methodBlocks.length +
+                ' khối phương pháp · biên soạn: ' +
+                topic.teacher,
         ),
       ),
       knowledgeBlocks.length > 0
@@ -154,15 +161,14 @@
         { class: 'row' },
         el(
           'a',
-          {
-            class: 'btn btn-lime',
-            href: '#/practice?topic=' + encodeURIComponent(topicId) + '&levels=N,H&count=5',
-          },
-          'Luyện tập bài này',
+          { class: 'btn btn-lime', href: practiceHref },
+          trial ? 'Sang bước 2: luyện ' + AM.trial.PRACTICE_COUNT + ' câu' : 'Luyện tập bài này',
           U.icon('trending_flat'),
         ),
-        exercisesLink(topicId),
-        el('a', { class: 'btn btn-ghost', href: '#/learning-path' }, 'Về lộ trình'),
+        trial ? null : exercisesLink(topicId),
+        trial
+          ? el('a', { class: 'btn btn-ghost', href: AM.trial.href.hub }, 'Về các bước học')
+          : el('a', { class: 'btn btn-ghost', href: '#/learning-path' }, 'Về lộ trình'),
       ),
       ui.footerNote(),
     );

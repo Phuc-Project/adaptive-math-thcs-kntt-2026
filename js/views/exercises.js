@@ -109,9 +109,12 @@
   // -------------------------------------------------------------------------
 
   function view(params, ctx) {
-    if (!ctx.hasProfile) {
+    // Bài học dùng thử: chỉ hiện một chủ đề, không cần hồ sơ.
+    const trial = !!(AM.trial && AM.trial.isTrial(params));
+    const trialTopic = trial ? AM.topics.getTopicById(params.topic) : null;
+    if (!ctx.hasProfile && !trialTopic) {
       return ui.page(
-        { title: 'Bài tập cá nhân hóa', activeRoute: '#/exercises', actions: [ui.homeButton()] },
+        { title: 'Bài tập', activeRoute: '#/exercises' },
         ui.empty(
           '📒',
           'Cần thiết lập hồ sơ trước',
@@ -121,7 +124,7 @@
       );
     }
 
-    const grade = ctx.profile.grade;
+    const grade = trialTopic ? trialTopic.grade : ctx.profile.grade;
     const all = X.forGrade(grade);
     const container = el('div', {});
 
@@ -399,6 +402,10 @@
     // ---- Khối thống kê đầu trang -----------------------------------------
 
     function statsRow() {
+      if (trialTopic) {
+        const prog = X.topicProgress(ctx.learner, trialTopic.id);
+        return el('p', { class: 'muted-sm', id: 'ex-stats' }, 'Đã làm được ' + prog.done + '/' + prog.total + ' bài' + (prog.stuck ? ' · cần làm lại ' + prog.stuck : ''));
+      }
       let done = 0;
       let stuck = 0;
       for (const x of all) {
@@ -421,15 +428,15 @@
       const recs = X.recommend(ctx, { salt: st.salt ? String(st.salt) : '' });
       if (recs.length === 0) {
         return ui.sectionCard(
-          [U.icon('auto_awesome'), 'Gợi ý cho bạn hôm nay'],
+          'Nên làm hôm nay',
           null,
           el('p', { class: 'muted' }, 'Bạn đã làm hết các bài tập của khối này. Tuyệt vời!'),
         );
       }
       return ui.sectionCard(
-        [U.icon('auto_awesome'), 'Gợi ý cho bạn hôm nay'],
+        'Nên làm hôm nay',
         ctx.hasDiagnostic
-          ? 'Chọn theo hồ sơ năng lực và kết quả luyện tập: chủ đề còn xa mục tiêu nhất được ưu tiên, bài được chọn đúng mức bạn cần.'
+          ? 'Chủ đề em còn yếu nhất được xếp trước, mỗi bài vừa sức với em.'
           : 'Chưa có kết quả kiểm tra đầu vào — gợi ý đang dùng mức mặc định. Làm bài kiểm tra theo chương để gợi ý sát hơn.',
         recs.map(function (r) {
           return el(
@@ -447,10 +454,10 @@
                   type: 'button',
                   onclick: () => openTopic(r.topic.id, true),
                 },
-                'Mở cả chủ đề',
+                'Xem cả chủ đề',
               ),
             ),
-            el('p', { class: 'muted-sm' }, r.topic.chapterTitle + ' · ' + r.reason),
+            el('p', { class: 'muted-sm' }, r.topic.chapterTitle + '. ' + r.reason),
             r.items.map(exerciseCard),
           );
         }),
@@ -554,7 +561,10 @@
           { class: 'row' },
           el(
             'a',
-            { class: 'btn btn-ghost btn-sm', href: '#/theory?topic=' + encodeURIComponent(topicId) },
+            {
+              class: 'btn btn-ghost btn-sm',
+              href: trialTopic ? AM.trial.href.theory : '#/theory?topic=' + encodeURIComponent(topicId),
+            },
             U.icon('menu_book'),
             'Lý thuyết',
           ),
@@ -562,7 +572,9 @@
             'a',
             {
               class: 'btn btn-ghost btn-sm',
-              href: '#/practice?topic=' + encodeURIComponent(topicId) + '&levels=N,H,V&count=8',
+              href: trialTopic
+                ? AM.trial.href.practice
+                : '#/practice?topic=' + encodeURIComponent(topicId) + '&levels=N,H,V',
             },
             U.icon('quiz'),
             'Luyện trắc nghiệm thích ứng',
@@ -781,9 +793,40 @@
 
     // ---- Lắp trang --------------------------------------------------------
 
+    if (trialTopic) {
+      U.mount(
+        container,
+        ui.page(
+          { title: 'Bài tập', activeRoute: '#/thu' },
+          AM.trial.crumb(3, 'Bài tập trong sách'),
+          el(
+            'section',
+            { class: 'stack-sm' },
+            el('div', { class: 'section-label' }, trialTopic.chapterTitle),
+            el('h1', { class: 'page-title' }, 'Bài tập: ' + trialTopic.title),
+            el(
+              'p',
+              { class: 'page-sub' },
+              'Làm bài ra vở rồi bấm "Làm được" hoặc "Chưa làm được"; câu trắc nghiệm được chấm ngay. ' +
+                'Bí thì mở "Hướng dẫn giải" hoặc hỏi Gia sư AI ngay dưới bài. Bấm vào ảnh đề để phóng to.',
+            ),
+            statsRow(),
+          ),
+          el('section', { class: 'card stack-sm' }, topicPanel(trialTopic.id)),
+          el(
+            'div',
+            { class: 'row' },
+            el('a', { class: 'btn btn-lime', href: AM.trial.href.tutor }, 'Sang bước 4: hỏi Gia sư AI', U.icon('trending_flat')),
+            el('a', { class: 'btn btn-ghost', href: AM.trial.href.hub }, 'Về các bước học'),
+          ),
+        ),
+      );
+      return container;
+    }
+
     if (all.length === 0) {
       return ui.page(
-        { title: 'Bài tập cá nhân hóa', activeRoute: '#/exercises', actions: [ui.homeButton()] },
+        { title: 'Bài tập', activeRoute: '#/exercises' },
         ui.empty('📭', 'Chưa có bài tập', 'Kho bài tập cho ' + C.GRADE_LABELS[grade] + ' đang trống.'),
       );
     }
@@ -791,17 +834,16 @@
     U.mount(
       container,
       ui.page(
-        { title: 'Bài tập cá nhân hóa', activeRoute: '#/exercises', actions: [ui.homeButton()] },
+        { title: 'Bài tập', activeRoute: '#/exercises' },
         el(
           'section',
           { class: 'stack-sm' },
-          el('div', { class: 'section-label' }, C.GRADE_LABELS[grade] + ' · Kết nối tri thức'),
-          el('h1', { class: 'page-title' }, 'Bài tập cá nhân hóa'),
+          el('h1', { class: 'page-title' }, 'Bài tập ' + C.GRADE_LABELS[grade].toLowerCase()),
           el(
             'p',
             { class: 'page-sub' },
-            'Làm bài ra giấy, rồi tự đánh giá "Làm được / Chưa làm được". Câu trắc nghiệm có đáp án ' +
-              'được chấm ngay. Mỗi kết quả cập nhật mức thành thạo của chủ đề và thay đổi gợi ý lần sau.',
+            'Làm bài ra vở, rồi bấm "Làm được" hoặc "Chưa làm được". Câu trắc nghiệm được chấm ngay. ' +
+              'Bài em chưa làm được sẽ được gợi ý làm lại.',
           ),
           statsRow(),
         ),

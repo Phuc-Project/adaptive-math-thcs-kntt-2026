@@ -20,6 +20,8 @@
     const activities = [];
     const completedSet = new Set(learner.completedActivities);
     const isDone = (act) => completedSet.has(act.activityId);
+    // Bài ôn: nửa buổi luyện tập (theo số câu mỗi buổi của lộ trình hiện tại).
+    const reviewQ = AM.path.reviewQuestionCount((path && path.sessionQuestions) || AM.path.QUESTIONS_PER_SESSION);
 
     // --- 1. SRS reviews due today ---
     for (const topicId of Object.keys(learner.srs)) {
@@ -32,18 +34,18 @@
       activities.push({
         key: 'srs-' + topicId,
         source: 'srs',
-        reason: 'Ôn tập theo lịch SRS',
+        reason: 'Đến hạn ôn lại',
         activity: {
           activityId: activityId,
           type: 'review',
           topicId: topicId,
           topicTitle: topic ? topic.title : topicId,
           levels: ['N', 'H'],
-          questionCount: 3,
+          questionCount: reviewQ,
           theoryBlockCount: 0,
           workedExampleCount: 0,
-          estimatedMinutes: 5,
-          reason: 'SRS review (interval ' + srs.intervalDays + 'd)',
+          estimatedMinutes: AM.const.minutesForQuestions(reviewQ),
+          reason: 'Ôn lại sau ' + srs.intervalDays + ' ngày',
         },
       });
     }

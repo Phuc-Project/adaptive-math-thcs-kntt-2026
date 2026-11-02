@@ -5,9 +5,12 @@
  * schedule. Each gap topic produces a sequence of sessions:
  *
  *   1. Theory     — read definitions + worked examples (~10 min)
- *   2. Practice N — 5 questions at Nhận biết   (~15 min)
- *   3. Practice H — 5 questions at Thông hiểu  (~15 min)
- *   4. Practice V — 5 questions at Vận dụng    (~15 min)   [if the gap is there]
+ *   2. Practice N — n questions at Nhận biết   (n × 1,5 phút)
+ *   3. Practice H — n questions at Thông hiểu
+ *   4. Practice V — n questions at Vận dụng    [if the gap is there]
+ *
+ * n = số câu mỗi buổi (AM.const.sessionQuestionCount: học sinh chọn 5/10/15
+ * hoặc tự động theo thời gian học mỗi ngày). Số phút luôn tính từ số câu.
  *
  * Those slots are packed into days inside the student's `dailyMinutes` budget,
  * interleaved with a review day every few learning days, then grouped into
@@ -19,12 +22,11 @@
   const U = AM.util;
   const TOPICS = AM.topics.TOPICS;
 
-  const QUESTIONS_PER_SESSION = 5;
-  const QUESTIONS_PER_REVIEW = 3;
+  const QUESTIONS_PER_SESSION = 5; // mặc định khi không có hồ sơ
+  const C = AM.const;
   const REVIEW_EVERY_N_DAYS = 4;
   const MAX_NEW_TOPICS_PER_DAY = 2;
   const THEORY_MINUTES = 10;
-  const PRACTICE_MINUTES = 15;
   const MAX_DAYS = 90;
 
   const PRIORITY_WEIGHTS = {
@@ -62,7 +64,12 @@
     return levels;
   }
 
-  function buildPriorityList(profile, knowledge, pool, learner) {
+  function reviewQuestionCount(nQ) {
+    return Math.max(3, Math.round(nQ / 2));
+  }
+
+  function buildPriorityList(profile, knowledge, pool, learner, nQ) {
+    nQ = nQ || QUESTIONS_PER_SESSION;
     const weakSet = new Set(profile.weakTopicIds);
 
     // Exam density = share of a topic's items that came from a real exam.
@@ -128,7 +135,7 @@
         examDensity: examDensity,
         fragility: fragility,
         score: score,
-        estimatedMinutes: THEORY_MINUTES + gapLevels.length * PRACTICE_MINUTES,
+        estimatedMinutes: THEORY_MINUTES + gapLevels.length * C.minutesForQuestions(nQ),
         gapLevels: gapLevels,
       });
     }
@@ -160,7 +167,7 @@
   // Session slots
   // -------------------------------------------------------------------------
 
-  function generateSessionSlots(priorities) {
+  function generateSessionSlots(priorities, nQ) {
     const slots = [];
 
     for (const p of priorities) {
@@ -206,10 +213,10 @@
             topicId: p.topicId,
             topicTitle: p.title,
             levels: [lv],
-            questionCount: QUESTIONS_PER_SESSION,
+            questionCount: nQ,
             theoryBlockCount: 0,
             workedExampleCount: 0,
-            estimatedMinutes: PRACTICE_MINUTES,
+            estimatedMinutes: C.minutesForQuestions(nQ),
             reason:
               'gap ' + p.gap.toFixed(2) + ', mức ' + lv + ', ưu tiên ' + p.score.toFixed(3),
           },
@@ -224,7 +231,8 @@
   // Day packing
   // -------------------------------------------------------------------------
 
-  function buildReviewActivities(topics) {
+  function buildReviewActivities(topics, nQ) {
+    const reviewQ = reviewQuestionCount(nQ);
     const seen = new Map();
     for (const t of topics) seen.set(t.topicId, t);
     return Array.from(seen.values())
@@ -235,15 +243,15 @@
         topicId: t.topicId,
         topicTitle: t.title,
         levels: t.levels.slice(0, 1),
-        questionCount: QUESTIONS_PER_REVIEW,
+        questionCount: reviewQ,
         theoryBlockCount: 0,
         workedExampleCount: 0,
-        estimatedMinutes: Math.round((QUESTIONS_PER_REVIEW * 90) / 60),
+        estimatedMinutes: C.minutesForQuestions(reviewQ),
         reason: 'ôn tập sau vài ngày học',
       }));
   }
 
-  function packIntoDays(slots, dailyMinutes, startDate) {
+  function packIntoDays(slots, dailyMinutes, startDate, nQ) {
     if (slots.length === 0) return [];
 
     const days = [];
@@ -263,7 +271,7 @@
         (learnDaysSinceReview >= REVIEW_EVERY_N_DAYS - 1 || queue.length === 0);
 
       if (shouldReview) {
-        const reviewActs = buildReviewActivities(recentTopics.slice(-6));
+        const reviewActs = buildReviewActivities(recentTopics.slice(-6), nQ);
         days.push({
           dayNumber: dayNumber,
           date: ds,
@@ -375,13 +383,15 @@
 
   function generateLearningPath(profile, knowledge, pool, learner) {
     const startDate = U.todayVNDate();
-    const priorityList = buildPriorityList(profile, knowledge, pool, learner);
+    const nQ = C.sessionQuestionCount(profile);
+    const priorityList = buildPriorityList(profile, knowledge, pool, learner, nQ);
     stabilitySort(priorityList);
 
     const days = packIntoDays(
-      generateSessionSlots(priorityList),
+      generateSessionSlots(priorityList, nQ),
       profile.dailyMinutes,
       startDate,
+      nQ,
     );
     const sprints = groupIntoSprints(days, startDate);
     const lastDay = days.length > 0 ? days[days.length - 1] : null;
@@ -394,6 +404,7 @@
       grade: knowledge.grade,
       goal: profile.goal,
       dailyMinutes: profile.dailyMinutes,
+      sessionQuestions: nQ,
       deadline: profile.deadline,
       estimatedCompletionDate: lastDay ? lastDay.date : U.dateStr(startDate),
       totalDays: days.length,
@@ -407,5 +418,6 @@
     generateLearningPath: generateLearningPath,
     computeUrgency: computeUrgency,
     QUESTIONS_PER_SESSION: QUESTIONS_PER_SESSION,
+    reviewQuestionCount: reviewQuestionCount,
   };
 })(window.AM);

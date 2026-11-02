@@ -108,7 +108,7 @@
         el('h1', { class: 'page-title', style: { color: '#fff' } }, 'Nhiệm vụ phát triển năng lực số'),
         el(
           'p',
-          { style: { color: 'rgba(234,255,245,0.85)', lineHeight: 1.7 } },
+          { style: { color: 'rgba(238,244,240,0.86)', lineHeight: 1.7 } },
           'Chín nhiệm vụ minh họa cho năm biện pháp phát triển năng lực số trong dạy học Toán. ' +
             'Mỗi nhiệm vụ gồm: tình huống, các mức hỗ trợ, câu hỏi làm trực tiếp trên hệ thống và phiếu học tập để tạo sản phẩm/minh chứng.',
         ),

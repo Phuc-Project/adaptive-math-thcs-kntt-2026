@@ -72,11 +72,41 @@
     });
   }
 
+  /**
+   * Bộ câu cho bài học dùng thử: chia theo tỉ lệ 3 : 3 : 2 : 2 cho các mức
+   * N, H, V, T, mỗi mức ưu tiên câu chưa làm, rồi xếp từ dễ đến khó.
+   */
+  function trialSequence(topicPool, want) {
+    const LEVELS = ['N', 'H', 'V', 'T'];
+    const WEIGHT = [3, 3, 2, 2];
+    const quota = WEIGHT.map((w) => Math.floor((w * want) / 10));
+    for (let i = 0; quota.reduce((a, b) => a + b, 0) < want; i = (i + 1) % 4) quota[i] += 1;
+    const used = new Set(AM.store.loadLearnerState().usedQuestionIds);
+    // Cùng ngày + cùng số câu đã làm → cùng bộ câu (vẽ lại trang không đổi đề giữa chừng).
+    const rng = U.mulberry32(U.hashStringToU32('thu|' + U.todayVNStr() + '|' + used.size + '|' + want));
+    const out = [];
+    LEVELS.forEach(function (lv, i) {
+      const list = topicPool.filter((q) => q.level === lv);
+      const fresh = U.shuffled(list.filter((q) => !used.has(q.id)), rng);
+      const seen = U.shuffled(list.filter((q) => used.has(q.id)), rng);
+      out.push.apply(out, fresh.concat(seen).slice(0, quota[i]));
+    });
+    // Mức nào thiếu câu thì bù bằng câu còn lại của chủ đề.
+    if (out.length < want) {
+      const taken = new Set(out.map((q) => q.id));
+      out.push.apply(out, U.shuffled(topicPool.filter((q) => !taken.has(q.id)), rng).slice(0, want - out.length));
+    }
+    const rank = { N: 0, unknown: 0, H: 1, V: 2, T: 3 };
+    return out.sort((x, y) => (rank[x.level] || 0) - (rank[y.level] || 0));
+  }
+
   function view(params, ctx) {
     const topicId = params.topic;
     const topic = topicId ? AM.topics.getTopicById(topicId) : null;
 
-    if (!ctx.hasProfile || !topic) {
+    // Bài học dùng thử mở được cả khi chưa có hồ sơ.
+    const trial = !!(AM.trial && AM.trial.isTrial(params));
+    if ((!ctx.hasProfile && !trial) || !topic) {
       return ui.page(
         { title: 'Luyện tập', activeRoute: '#/learning-path', actions: [ui.homeButton()] },
         ui.empty('🎯', 'Không mở được phiên luyện tập', 'Thiếu hồ sơ hoặc mã chủ đề không hợp lệ.'),
@@ -85,7 +115,14 @@
 
     const levels = (params.levels || 'N,H').split(',').filter(Boolean);
     const activityId = params.activityId || null;
-    const wantCount = Math.max(1, Math.min(20, Number(params.count) || 5));
+    // Số câu cả buổi: theo link (lộ trình đã tính sẵn) hoặc theo lựa chọn trong hồ sơ.
+    const wantCount = Math.max(3, Math.min(15, Number(params.count) || C.sessionQuestionCount(ctx.profile)));
+    const parts = {
+      // Dùng thử: không chen câu khởi động của chủ đề khác vào bài mẫu.
+      warmup: trial ? 0 : wantCount >= 10 ? 2 : wantCount >= 7 ? 1 : 0,
+      assessment: Math.min(5, Math.max(1, Math.round(wantCount * 0.3))),
+    };
+    parts.practice = wantCount - parts.warmup - parts.assessment;
 
     // ---- Build the question queue ----------------------------------------
 
@@ -93,19 +130,34 @@
       AM.bkt.isMastered(ctx.learner.bkt[id]),
     );
 
+    // Kho câu của khối lớp chứa chủ đề — học sinh lớp khác (hoặc chưa có hồ sơ)
+    // mở bài dùng thử vẫn có câu hỏi.
+    const pool = ctx.pool.some((q) => q.topicId === topicId) ? ctx.pool : AM.bank.getPoolForGrade(topic.grade);
     const selection = AM.practiceSelector.selectPracticeQuestions(
-      ctx.pool,
+      pool,
       topicId,
       levels,
       ctx.learner,
       masteredTopicIds,
-      U.hashStringToU32(topicId + '|' + levels.join(',') + '|' + U.todayVNStr()),
+      U.hashStringToU32(topicId + '|' + levels.join(',') + '|' + U.todayVNStr() + '|' + wantCount),
+      { warmup: parts.warmup, practice: parts.practice + parts.warmup, assessment: parts.assessment },
     );
 
+    // Thiếu câu khởi động (chưa có chủ đề nào thành thạo) thì bù vào phần luyện tập.
+    const warm = selection.warmup.slice(0, parts.warmup);
+    // Dùng thử: một mạch từ dễ đến khó, đủ bốn mức (10 câu → 3 N, 3 H, 2 V, 2 T),
+    // ưu tiên câu em chưa làm; không tách phần "kiểm tra nhanh" quay lại câu dễ.
+    if (trial) {
+      selection.warmup = [];
+      selection.practice = trialSequence(pool.filter((q) => q.topicId === topicId), wantCount);
+      selection.assessment = [];
+      parts.practice = selection.practice.length;
+      parts.assessment = 0;
+    }
     const queue = []
-      .concat(selection.warmup.slice(0, 2).map((q) => ({ q: q, phase: 'warmup' })))
-      .concat(selection.practice.slice(0, wantCount).map((q) => ({ q: q, phase: 'practice' })))
-      .concat(selection.assessment.map((q) => ({ q: q, phase: 'assessment' })));
+      .concat(warm.map((q) => ({ q: q, phase: 'warmup' })))
+      .concat(selection.practice.slice(0, parts.practice + (parts.warmup - warm.length)).map((q) => ({ q: q, phase: 'practice' })))
+      .concat(selection.assessment.slice(0, parts.assessment).map((q) => ({ q: q, phase: 'assessment' })));
 
     if (queue.length === 0) {
       return ui.page(
@@ -344,6 +396,43 @@
             : null,
         ),
         ui.bar(rt.index / queue.length),
+        lengthPicker(),
+      );
+    }
+
+    /**
+     * Chọn độ dài buổi ngay tại chỗ — chỉ hiện trước khi trả lời câu đầu tiên,
+     * để đổi số câu không làm mất bài đang làm dở.
+     */
+    function lengthPicker() {
+      if (rt.index !== 0 || rt.reveal || rt.results.length) return null;
+      function go(n) {
+        const q = Object.assign({}, params, { count: String(n) });
+        const qs = Object.keys(q)
+          .map((k) => encodeURIComponent(k) + '=' + encodeURIComponent(q[k]))
+          .join('&');
+        AM.router.navigate('#/practice?' + qs, true);
+      }
+      return el(
+        'div',
+        { class: 'row session-length' },
+        el('span', { class: 'muted-sm' }, 'Buổi này:'),
+        (C.SESSION_LENGTHS.indexOf(wantCount) !== -1
+          ? C.SESSION_LENGTHS
+          : C.SESSION_LENGTHS.concat([wantCount]).sort((a, b) => a - b)
+        ).map((n) =>
+          el(
+            'button',
+            {
+              type: 'button',
+              class: U.cn('ex-chip', n === wantCount && 'is-active'),
+              'aria-pressed': n === wantCount ? 'true' : 'false',
+              onclick: () => n !== wantCount && go(n),
+            },
+            n + ' câu',
+          ),
+        ),
+        el('span', { class: 'muted-sm' }, 'khoảng ' + C.minutesForQuestions(queue.length) + ' phút'),
       );
     }
 
@@ -414,7 +503,7 @@
           { class: 'row', style: { justifyContent: 'space-between' } },
           el(
             'a',
-            { class: 'btn btn-outline btn-sm', href: '#/learning-path' },
+            { class: 'btn btn-outline btn-sm', href: trial ? AM.trial.href.hub : '#/learning-path' },
             'Thoát',
           ),
           rt.reveal
@@ -457,15 +546,15 @@
           el('h1', { class: 'page-title', style: { color: '#fff' } }, 'Hoàn thành phiên luyện tập'),
           el(
             'p',
-            { style: { color: 'rgba(234,255,245,0.8)', fontWeight: 500, lineHeight: 1.7 } },
+            { style: { color: 'rgba(238,244,240,0.86)', fontWeight: 500, lineHeight: 1.7 } },
             topic.title + ' · đúng ' + s.correct + '/' + s.attempted + ' câu (' + U.pct(s.accuracy) + ').',
           ),
         ),
         el(
           'section',
           { class: 'grid-3' },
-          ui.statTile('+' + s.xpEarned, 'XP nhận được'),
-          ui.statTile(U.pct(s.masteryAfter), 'Mức thành thạo (BKT)'),
+          ui.statTile('+' + s.xpEarned, 'điểm kinh nghiệm'),
+          ui.statTile(U.pct(s.masteryAfter), 'Mức thành thạo chủ đề'),
           ui.statTile((delta >= 0 ? '+' : '') + (delta * 100).toFixed(1) + '%', 'Thay đổi so với trước'),
         ),
         s.mastered
@@ -515,9 +604,21 @@
         el(
           'div',
           { class: 'row' },
-          el('a', { class: 'btn btn-lime', href: '#/learning-path' }, 'Về lộ trình'),
-          el('a', { class: 'btn btn-ghost', href: '#/profile' }, 'Xem hồ sơ'),
-          el('a', { class: 'btn btn-ghost', href: '#/errors' }, 'Sổ tay lỗi sai'),
+          trial
+            ? [
+                el('a', { class: 'btn btn-lime', href: AM.trial.href.exercises }, 'Sang bước 3: bài tập trong sách', U.icon('trending_flat')),
+                el(
+                  'button',
+                  { class: 'btn btn-outline', type: 'button', onclick: () => AM.router.render() },
+                  'Luyện thêm ' + AM.trial.PRACTICE_COUNT + ' câu khác',
+                ),
+                el('a', { class: 'btn btn-ghost', href: AM.trial.href.hub }, 'Về các bước học'),
+              ]
+            : [
+                el('a', { class: 'btn btn-lime', href: '#/learning-path' }, 'Về lộ trình'),
+                el('a', { class: 'btn btn-ghost', href: '#/profile' }, 'Xem hồ sơ'),
+                el('a', { class: 'btn btn-ghost', href: '#/errors' }, 'Sổ tay lỗi sai'),
+              ],
         ),
         ui.footerNote(),
       );
@@ -529,9 +630,10 @@
         ui.page(
           {
             title: rt.finished ? 'Kết quả luyện tập' : 'Luyện tập · ' + topic.title,
-            activeRoute: '#/learning-path',
+            activeRoute: trial ? '#/thu' : '#/learning-path',
             actions: [ui.homeButton()],
           },
+          trial ? AM.trial.crumb(2, 'Luyện ' + AM.trial.PRACTICE_COUNT + ' câu trắc nghiệm') : null,
           rt.finished ? summaryScreen() : runnerScreen(),
         ),
       );

@@ -29,17 +29,19 @@
   function taskHref(t) {
     const topic = AM.topics.getTopicById(t.topicId);
     const q = encodeURIComponent(t.topicId);
+    // Số câu khớp số phút gia sư đã xếp cho nhiệm vụ (1,5 phút/câu, 3–15 câu).
+    const n = Math.max(3, Math.min(15, Math.round((Number(t.minutes) || 15) / AM.const.MINUTES_PER_QUESTION)));
     switch (t.type) {
       case 'theory':
         return '#/theory?topic=' + q;
       case 'exercise':
         return '#/exercises?topic=' + q;
       case 'review':
-        return '#/practice?topic=' + q + '&levels=H,V&count=5';
+        return '#/practice?topic=' + q + '&levels=H,V&count=' + n;
       case 'test':
         return topic ? '#/diagnostic?chapter=' + topic.chapter : '#/diagnostic';
       default:
-        return '#/practice?topic=' + q + '&levels=N,H,V&count=8';
+        return '#/practice?topic=' + q + '&levels=N,H,V&count=' + n;
     }
   }
 
@@ -202,7 +204,7 @@
         el(
           'p',
           { class: 'muted-sm' },
-          'Lập lúc ' + new Date(r.builtAt).toLocaleString('vi-VN') + (r.model ? ' · ' + r.model : '') +
+          'Lập lúc ' + new Date(r.builtAt).toLocaleString('vi-VN') +
             ' · đã xong ' + finished + '/' + total + ' nhiệm vụ',
         ),
         ui.bar(total ? finished / total : 0),

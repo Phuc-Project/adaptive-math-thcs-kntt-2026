@@ -8,7 +8,7 @@ const { createDb } = require('./db');
 const { createGemini } = require('./gemini-mock');
 const srv = require('./server');
 
-const ROOT = path.resolve(process.argv[2] || '/home/claude/app');
+const ROOT = path.resolve(process.argv[2] || path.join(__dirname, '..', '..'));
 const RULES = process.argv[3] || 'new';
 const PORT = 8800 + Math.floor(Math.random() * 100);
 const BASE = 'http://localhost:' + PORT + '/';

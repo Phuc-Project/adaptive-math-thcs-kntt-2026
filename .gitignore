@@ -34,3 +34,7 @@ data/pdf/
 
 
 .vercel
+
+# Ảnh chụp do kiểm thử tự sinh
+tools/kiem-thu/anh-chup/
+tools/kiem-thu/node_modules/

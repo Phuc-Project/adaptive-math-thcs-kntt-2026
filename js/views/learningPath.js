@@ -203,6 +203,7 @@
       path.grade !== ctx.knowledge.grade ||
       path.goal !== ctx.profile.goal ||
       path.dailyMinutes !== ctx.profile.dailyMinutes ||
+      (path.sessionQuestions || 5) !== AM.const.sessionQuestionCount(ctx.profile) ||
       (path.deadline || null) !== (ctx.profile.deadline || null) ||
       (path.diagnosticSessionId || null) !== (ctx.knowledge.sessionId || null);
 
@@ -217,7 +218,7 @@
         ui.empty(
           '🎉',
           'Không có chủ đề nào cần bù',
-          'Mọi chủ đề đều đã đạt hoặc gần đạt mục tiêu của bạn. Hãy tiếp tục ôn tập theo lịch SRS.',
+          'Mọi chủ đề đều đã đạt hoặc gần đạt mục tiêu của bạn. Hãy tiếp tục ôn lại theo lịch ôn tập.',
           el('a', { class: 'btn btn-primary', href: '#/profile' }, 'Xem hồ sơ'),
         ),
         AM.aiRoadmapUI ? AM.aiRoadmapUI.card(ctx) : null,

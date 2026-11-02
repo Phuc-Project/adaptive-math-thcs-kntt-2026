@@ -11,6 +11,7 @@
   const V = AM.views;
 
   R.register('/', V.home);
+  R.register('/thu', V.trial);
   R.register('/landing', V.landing);
   R.register('/login', V.login);
   R.register('/admin', V.admin);
@@ -64,7 +65,7 @@
         el(
           'div',
           { class: 'auth-card stack-sm' },
-          el('div', { class: 'auth-logo' }, '📐'),
+          el('div', { class: 'auth-logo' }, el('span', { class: 'brand-mark' }, 'x')),
           el('h1', { class: 'page-title' }, message),
           detail ? el('p', { class: 'muted', style: { lineHeight: 1.65 } }, detail) : null,
         ),

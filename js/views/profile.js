@@ -8,6 +8,11 @@
 (function (AM) {
   'use strict';
 
+  /** θ (IRT) → điểm 0–100 cho học sinh dễ hiểu. */
+  function abilityScore(theta) {
+    return Math.round(100 / (1 + Math.exp(-1.2 * (Number(theta) || 0))));
+  }
+
   const U = AM.util;
   const el = U.el;
   const ui = AM.ui;
@@ -18,21 +23,20 @@
     return el(
       'section',
       { class: 'card card-dark stack-sm' },
-      el('div', { class: 'section-label', style: { color: '#b2f746' } }, 'Năng lực tổng quát'),
+      el('div', { class: 'next-step-label' }, 'Điểm năng lực ước tính'),
       el(
         'div',
-        { class: 'row', style: { alignItems: 'baseline', gap: '1rem' } },
-        el('span', { style: { fontSize: '3rem', fontWeight: 800, color: '#fff' } }, k.theta.toFixed(2)),
-        el('span', { style: { color: 'rgba(234,255,245,0.7)', fontWeight: 600 } },
-          'θ · sai số ±' + k.standardError.toFixed(2)),
+        { class: 'row', style: { alignItems: 'baseline', gap: '0.6rem' } },
+        el('span', { style: { fontSize: '3rem', fontWeight: 800, color: '#fff', lineHeight: 1 } }, String(abilityScore(k.theta))),
+        el('span', { style: { color: 'rgba(238,244,240,0.75)', fontWeight: 600 } }, '/ 100'),
       ),
       el(
         'p',
-        { style: { color: 'rgba(234,255,245,0.8)', lineHeight: '1.7', fontWeight: 500 } },
-        'θ là thang năng lực của mô hình IRT: 0 là mức trung bình, dương là trên trung bình. ' +
-          'Mục tiêu của bạn đặt mức thành thạo ' +
+        {},
+        '50 là mức trung bình của học sinh cùng lớp. Điểm này được ước tính từ bài kiểm tra đầu vào, ' +
+          'càng làm nhiều câu càng chính xác. Mục tiêu của em: mỗi chủ đề đạt ' +
           U.pct(k.target) +
-          ' cho mỗi chủ đề.',
+          ' mức thành thạo.',
       ),
       el(
         'div',
@@ -70,7 +74,7 @@
     const series = chapters.map((c) => ({ label: c.chapterTitle, value: c.mastery }));
     return ui.sectionCard(
       [U.icon('radar'), 'Mức thành thạo theo chương'],
-      'Đường nét đứt màu chanh là mục tiêu ' + U.pct(ctx.knowledge.target) + '.',
+      'Đường nét đứt màu vàng là mục tiêu ' + U.pct(ctx.knowledge.target) + '.',
       ui.radarChart(series, ctx.knowledge.target),
     );
   }
@@ -180,7 +184,7 @@
               {
                 class: 'btn btn-primary btn-sm',
                 href:
-                  '#/practice?topic=' + encodeURIComponent(g.topicId) + '&levels=N,H&count=5',
+                  '#/practice?topic=' + encodeURIComponent(g.topicId) + '&levels=N,H',
               },
               'Luyện tập',
             ),
@@ -194,7 +198,7 @@
     const tree = ctx.tree;
     return ui.sectionCard(
       [U.icon('park'), 'Cây tri thức'],
-      'Độ vững kết hợp mức thành thạo, BKT, chuỗi ôn tập SRS, lỗi chưa sửa và ' +
+      'Độ vững tính từ mức thành thạo, số lần ôn lại đúng hạn, lỗi chưa sửa và ' +
         'độ đều đặn khi học. Bấm vào một chủ đề để luyện tập.',
       el(
         'div',
@@ -233,7 +237,7 @@
                       encodeURIComponent(t.topicId) +
                       '&levels=' +
                       (t.weakestLevel || 'N') +
-                      '&count=5',
+                      '',
                     title:
                       t.title +
                       ' — độ vững ' +

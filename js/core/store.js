@@ -128,6 +128,8 @@
       deadline: p.deadline || null,
       selfLevel: p.selfLevel,
       weakTopicIds: strArr(p.weakTopicIds),
+      // Không bắt buộc: hồ sơ cũ chưa có trường này → "auto".
+      sessionLength: [5, 10, 15].indexOf(p.sessionLength) !== -1 ? p.sessionLength : 'auto',
       createdAt: typeof p.createdAt === 'string' ? p.createdAt : new Date().toISOString(),
       updatedAt: typeof p.updatedAt === 'string' ? p.updatedAt : new Date().toISOString(),
     };

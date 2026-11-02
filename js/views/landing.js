@@ -17,58 +17,39 @@
 
   const U = AM.util;
   const el = U.el;
-  const icon = U.icon;
-
-  /** Three claims, one line each. Any longer and this becomes a wall again. */
-  const POINTS = [
-    ['target', 'Kiểm tra đầu vào', 'Khoảng 30 phút để biết bạn đang vững và hổng ở đâu.'],
-    ['map', 'Lộ trình riêng', 'Học đúng phần còn yếu, không cày lại phần đã vững.'],
-    ['groups', 'Lớp học của thầy cô', 'Nhập mã lớp để thầy cô theo dõi và hỗ trợ bạn.'],
-  ];
-
-  const STEPS = [
-    'Tạo tài khoản',
-    'Làm bài kiểm tra đầu vào',
-    'Học theo lộ trình mỗi ngày',
-  ];
 
   /**
-   * A miniature of the real profile screen.
-   *
-   * This is the one piece of visual weight the page keeps, because it does the
-   * job that three paragraphs of copy used to do badly: it shows what the
-   * product produces. No prose inside it beyond four topic names.
+   * Trang vở minh hoạ: một bài làm của học sinh, thầy cô chấm bằng bút đỏ.
+   * Đây là thứ duy nhất "có hình" trên trang — nó cho thấy sản phẩm làm gì
+   * (chỉ ra đúng chỗ sai) thay cho ba đoạn quảng cáo.
    */
-  function previewCard() {
-    const rows = [
-      ['Số hữu tỉ', 0.86, 'thanh-thao'],
-      ['Tam giác đồng dạng', 0.64, 'kha'],
-      ['Căn thức', 0.41, 'dang-hoc'],
-      ['Xác suất', 0.23, 'chua-biet'],
-    ];
-
-    return el(
-      'div',
-      { class: 'preview' },
-      el('div', { class: 'preview-head' }, 'Hồ sơ năng lực'),
-      el(
+  function notebook() {
+    function line(math, mark, note) {
+      const mathNode = window.katex
+        ? el('span', { class: 'nb-math', html: window.katex.renderToString(math, { throwOnError: false }) })
+        : el('span', { class: 'nb-math' }, math);
+      return el(
         'div',
-        { class: 'preview-body' },
-        rows.map(([label, value, tone]) =>
-          el(
-            'div',
-            { class: 'preview-row' },
-            el('span', { class: 'preview-label' }, label),
-            el(
-              'span',
-              { class: 'bar fill-' + tone },
-              el('span', { style: { width: Math.round(value * 100) + '%' } }),
-            ),
-          ),
-        ),
-      ),
+        { class: U.cn('nb-line', mark && 'is-' + mark) },
+        mathNode,
+        mark ? el('span', { class: 'nb-mark', 'aria-label': mark === 'ok' ? 'Đúng' : 'Sai' }, mark === 'ok' ? '✓' : '✗') : null,
+        note ? el('span', { class: 'nb-note' }, note) : null,
+      );
+    }
+    return el(
+      'figure',
+      { class: 'notebook sheet-ruled', 'aria-label': 'Ví dụ bài làm được chấm' },
+      el('div', { class: 'nb-head' }, 'Bài 3. Giải phương trình'),
+      line('2(x - 3) = x + 4', null),
+      line('2x - 3 = x + 4', 'bad', 'Nhân phân phối thiếu: 2 · 3 = 6'),
+      line('2x - 6 = x + 4', 'ok'),
+      line('x = 10', 'ok'),
+      el('figcaption', { class: 'nb-foot' }, 'Lỗi sai được ghi vào sổ tay. Tuần sau hệ thống cho em làm lại dạng bài này.'),
     );
   }
+
+  /** Đăng ký xong mở thẳng bài học dùng thử (#/thu). */
+  const TRIAL_HREF = '#/login?mode=signup&next=thu';
 
   function hero() {
     return el(
@@ -76,77 +57,60 @@
       { class: 'landing-hero' },
       el(
         'div',
-        {},
-        el(
-          'h1',
-          { class: 'landing-title' },
-          'Học Toán THCS đúng chỗ ',
-          el('span', { class: 'accent' }, 'bạn còn yếu'),
-        ),
+        { class: 'landing-copy' },
+        el('h1', { class: 'landing-title' }, 'Học Toán THCS đúng chỗ em còn yếu'),
         el(
           'p',
           { class: 'landing-lead' },
-          'Làm một bài kiểm tra, nhận lộ trình học riêng cho mình.',
+          'Làm bài kiểm tra theo từng chương, nhận lộ trình riêng và bài tập theo sách Kết nối tri thức lớp 6–9. Vướng bài nào thì hỏi gia sư hoặc hỏi thầy cô ngay trong lớp.',
         ),
         el(
           'div',
           { class: 'landing-cta' },
-          el(
-            'a',
-            { class: 'btn btn-lime btn-lg', href: '#/login?mode=signup' },
-            'Bắt đầu miễn phí',
-            icon('trending_flat'),
-          ),
+          el('a', { class: 'btn btn-primary btn-lg', href: TRIAL_HREF }, 'Học thử: Hằng đẳng thức đáng nhớ'),
           el('a', { class: 'btn btn-outline btn-lg', href: '#/login' }, 'Đăng nhập'),
         ),
-        el('p', { class: 'landing-note' }, 'Miễn phí · Dành cho học sinh và giáo viên'),
-      ),
-      previewCard(),
-    );
-  }
-
-  function points() {
-    return el(
-      'section',
-      { class: 'landing-points' },
-      POINTS.map(([iconName, title, body]) =>
         el(
-          'article',
-          { class: 'point' },
-          el('span', { class: 'point-icon' }, icon(iconName)),
-          el('h2', { class: 'point-title' }, title),
-          el('p', { class: 'point-body' }, body),
+          'p',
+          { class: 'landing-note' },
+          'Bài mẫu Toán 8, khoảng 30 phút: lý thuyết, 10 câu luyện từ dễ đến khó, bài tập trong sách và Gia sư AI. Tạo tài khoản mất 1 phút.',
         ),
       ),
+      notebook(),
     );
   }
 
+  /** Ba bước — đúng là một trình tự nên mới đánh số. */
   function steps() {
+    const STEPS = [
+      ['Làm bài kiểm tra đầu vào', 'Chọn chương đã học. Câu hỏi tự điều chỉnh độ khó, mỗi chương khoảng 15–25 phút.'],
+      ['Nhận lộ trình riêng', 'Chủ đề còn yếu được xếp trước, vừa đúng số phút em học mỗi ngày.'],
+      ['Học và ôn đều đặn', 'Bài tập từ sách giáo khoa, lỗi sai được nhắc ôn lại đúng lúc sắp quên.'],
+    ];
     return el(
       'section',
-      { class: 'landing-steps' },
-      STEPS.map((label, i) =>
-        el(
-          'div',
-          { class: 'step' },
-          el('span', { class: 'step-num' }, String(i + 1)),
-          el('span', { class: 'step-label' }, label),
-        ),
+      { class: 'landing-section' },
+      el('h2', { class: 'landing-h2' }, 'Học sinh học thế nào'),
+      el(
+        'ol',
+        { class: 'landing-steps' },
+        STEPS.map(([t, b]) => el('li', {}, el('strong', {}, t), el('span', {}, b))),
       ),
+      el('a', { class: 'btn btn-outline', href: TRIAL_HREF, style: { justifySelf: 'start' } }, 'Học thử một bài ngay'),
     );
   }
 
-  function closing() {
+  function teachers() {
     return el(
       'section',
-      { class: 'landing-closing' },
-      el('h2', { class: 'closing-title' }, 'Sẵn sàng bắt đầu?'),
+      { class: 'landing-section landing-teacher' },
+      el('h2', { class: 'landing-h2' }, 'Thầy cô dùng thế nào'),
       el(
-        'a',
-        { class: 'btn btn-lime btn-lg', href: '#/login?mode=signup' },
-        'Tạo tài khoản',
-        icon('trending_flat'),
+        'p',
+        {},
+        'Tạo lớp, đưa mã 6 chữ cho học sinh. Thầy cô thấy ngay em nào đã kiểm tra, em nào đang cần hỗ trợ, và trả lời câu hỏi của học sinh ngay trên trang lớp.',
       ),
+      el('a', { class: 'btn btn-outline', href: '#/login?mode=signup' }, 'Đăng ký tài khoản giáo viên'),
     );
   }
 
@@ -157,20 +121,11 @@
       el(
         'header',
         { class: 'landing-nav' },
-        el('span', { class: 'landing-brand' }, el('span', { class: 'dot' }, '📐'), 'AdaptiveMath'),
-        el(
-          'span',
-          { class: 'landing-nav-actions' },
-          el('a', { class: 'btn btn-ghost btn-sm', href: '#/login' }, 'Đăng nhập'),
-          el('a', { class: 'btn btn-primary btn-sm', href: '#/login?mode=signup' }, 'Đăng ký'),
-        ),
+        el('span', { class: 'landing-brand' }, AM.ui.brandMark(), 'AdaptiveMath'),
+        el('span', { class: 'landing-nav-actions' }, el('a', { class: 'btn btn-outline btn-sm', href: '#/login' }, 'Đăng nhập')),
       ),
-      el('main', { class: 'landing-main' }, hero(), points(), steps(), closing()),
-      el(
-        'footer',
-        { class: 'landing-footer' },
-        'AdaptiveMath · Toán THCS lớp 6, 7, 8, 9 theo Chương trình GDPT 2018',
-      ),
+      el('main', { class: 'landing-main' }, hero(), steps(), teachers()),
+      el('footer', { class: 'landing-footer' }, 'AdaptiveMath — Toán THCS lớp 6 đến lớp 9, Chương trình GDPT 2018.'),
     );
   }
 
