@@ -182,25 +182,7 @@
   async function listMembers(code) {
     requireReady();
     const snap = await membersCol(code).get();
-    return snap.docs.map(function (doc) {
-      const d = doc.data() || {};
-      return {
-        uid: doc.id,
-        displayName: d.displayName || '',
-        email: d.email || '',
-        grade: d.grade || null,
-        joinedAt: toDate(d.joinedAt),
-        lastActiveAt: toDate(d.lastActiveAt),
-        hasDiagnostic: d.hasDiagnostic === true,
-        xp: d.xp || 0,
-        level: d.level || 0,
-        currentStreak: d.currentStreak || 0,
-        masteredTopics: d.masteredTopics || 0,
-        totalQuestions: d.totalQuestions || 0,
-        unresolvedErrors: d.unresolvedErrors || 0,
-        help: d.help || null,
-      };
-    });
+    return snap.docs.map(memberFromDoc);
   }
 
   /** Remove a student from a class the caller teaches. */
@@ -396,6 +378,65 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Realtime — giáo viên thấy tiến độ / câu hỏi mới, học sinh thấy câu trả lời
+  // ngay khi bên kia ghi, không phải bấm "Tải lại".
+  // ---------------------------------------------------------------------------
+
+  function memberFromDoc(doc) {
+    const d = doc.data() || {};
+    return {
+      uid: doc.id,
+      displayName: d.displayName || '',
+      email: d.email || '',
+      grade: d.grade || null,
+      joinedAt: toDate(d.joinedAt),
+      lastActiveAt: toDate(d.lastActiveAt),
+      hasDiagnostic: d.hasDiagnostic === true,
+      xp: d.xp || 0,
+      level: d.level || 0,
+      currentStreak: d.currentStreak || 0,
+      masteredTopics: d.masteredTopics || 0,
+      totalQuestions: d.totalQuestions || 0,
+      unresolvedErrors: d.unresolvedErrors || 0,
+      help: d.help || null,
+    };
+  }
+
+  /** Theo dõi danh sách lớp (giáo viên). Trả về hàm huỷ. */
+  function watchMembers(code, onData, onError) {
+    if (!fb.isReady()) return function () {};
+    const col = membersCol(code);
+    if (typeof col.onSnapshot !== 'function') return function () {};
+    return col.onSnapshot(
+      function (snap) {
+        onData(snap.docs.map(memberFromDoc));
+      },
+      function (err) {
+        if (onError) onError(err);
+      },
+    );
+  }
+
+  /** Theo dõi dòng thành viên của chính học sinh (câu trả lời của giáo viên). */
+  function watchMyMembership(onData, onError) {
+    const user = AM.auth.currentUser();
+    const code = AM.auth.classCode();
+    if (!fb.isReady() || !user || !code) return function () {};
+    const ref = memberDoc(code, user.uid);
+    if (typeof ref.onSnapshot !== 'function') return function () {};
+    return ref.onSnapshot(
+      function (snap) {
+        if (!snap.exists) return onData(null);
+        const d = snap.data() || {};
+        onData({ uid: snap.id, help: d.help || null, joinedAt: toDate(d.joinedAt) });
+      },
+      function (err) {
+        if (onError) onError(err);
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Shared
   // ---------------------------------------------------------------------------
 
@@ -453,6 +494,10 @@
     myMembership: myMembership,
     requestHelp: requestHelp,
     clearHelp: clearHelp,
+
+    // realtime
+    watchMembers: watchMembers,
+    watchMyMembership: watchMyMembership,
 
     // shared
     mirrorProgress: mirrorProgress,

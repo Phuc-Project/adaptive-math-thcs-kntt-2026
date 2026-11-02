@@ -49,6 +49,22 @@
       }
       state.loading = false;
       render();
+      startWatch();
+    }
+
+    // --- realtime: câu trả lời của giáo viên hiện ngay, không cần tải lại ---
+    let unwatch = null;
+    function startWatch() {
+      if (unwatch) unwatch();
+      unwatch = null;
+      if (!state.cls) return;
+      unwatch = room.watchMyMembership(function (m) {
+        if (!m) return; // bị xoá khỏi lớp: lần tải sau myClass() sẽ tự gỡ mã lớp
+        const before = JSON.stringify(state.membership && state.membership.help);
+        state.membership = m;
+        // Không vẽ lại khi đang gõ câu hỏi, trừ khi có thay đổi thật.
+        if (JSON.stringify(m.help) !== before && !state.busy) render();
+      });
     }
 
     // --- joining ------------------------------------------------------------
@@ -88,6 +104,7 @@
         state.found = null;
         state.codeInput = '';
         state.notice = 'Bạn đã vào lớp ' + joined.name + '.';
+        startWatch();
       } catch (err) {
         state.error = AM.fb.describeError(err);
       }
@@ -379,7 +396,13 @@
 
     render();
     void load();
-    return container;
+    return {
+      node: container,
+      cleanup: function () {
+        if (unwatch) unwatch();
+        unwatch = null;
+      },
+    };
   }
 
   AM.views = AM.views || {};

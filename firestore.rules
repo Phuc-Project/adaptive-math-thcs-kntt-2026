@@ -168,10 +168,17 @@ service cloud.firestore {
       // The student updates their own row (progress mirror + help requests),
       // but cannot mark their own question as answered or forge a reply.
       // The teacher updates it only to answer or clear a help request.
+      //
+      // `help` giữ NGUYÊN (giáo viên đã trả lời, học sinh chỉ đồng bộ tiến độ) cũng
+      // phải được phép. Thiếu điều kiện này, sau khi giáo viên trả lời một câu
+      // hỏi, mọi lần đồng bộ tiến độ của học sinh vào lớp đều bị từ chối — giáo
+      // viên thấy tiến độ "đứng yên" mãi.
       allow update: if (isSelf(uid)
           && request.resource.data.uid == resource.data.uid
           && (!('help' in request.resource.data)
-              || request.resource.data.help.status == 'pending'))
+              || request.resource.data.help.status == 'pending'
+              || ('help' in resource.data
+                  && request.resource.data.help == resource.data.help)))
         || (ownsClass(code)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['help']));
 

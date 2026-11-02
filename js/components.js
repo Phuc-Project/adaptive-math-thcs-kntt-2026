@@ -88,7 +88,10 @@
     { route: '#/classroom', label: 'Lớp học', icon: 'groups' },
   ];
 
-  const TEACHER_NAV = [{ route: '#/teacher', label: 'Lớp của tôi', icon: 'groups' }];
+  const TEACHER_NAV = [
+    { route: '#/teacher', label: 'Lớp của tôi', icon: 'groups' },
+    { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy' },
+  ];
 
   const ADMIN_NAV = [{ route: '#/admin', label: 'Quản trị', icon: 'admin_panel_settings' }];
 

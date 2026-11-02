@@ -34,17 +34,36 @@
     }
   }
 
-  async function idToken() {
+  async function idToken(forceRefresh) {
     try {
       const auth = AM.fb && typeof AM.fb.auth === 'function' ? AM.fb.auth() : null;
       let user = auth && auth.currentUser;
       if (!user && AM.auth && typeof AM.auth.currentUser === 'function') {
         user = AM.auth.currentUser();
       }
-      return user && typeof user.getIdToken === 'function' ? await user.getIdToken() : null;
+      return user && typeof user.getIdToken === 'function' ? await user.getIdToken(!!forceRefresh) : null;
     } catch (e) {
       return null;
     }
+  }
+
+  /** POST /api/tutor kèm token; gặp 401 thì làm mới token và thử lại đúng một lần. */
+  async function postTutor(payload, signal) {
+    let res = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const token = await idToken(attempt === 1);
+      res = await fetch('api/tutor', {
+        method: 'POST',
+        headers: Object.assign(
+          { 'Content-Type': 'application/json' },
+          token ? { Authorization: 'Bearer ' + token } : {},
+        ),
+        body: JSON.stringify(payload),
+        signal,
+      });
+      if (res.status !== 401) break;
+    }
+    return res;
   }
 
   /** Đọc một luồng SSE `data: {...}` và gọi onEvent cho từng sự kiện. */
@@ -233,16 +252,7 @@
   async function askNetwork(req, onDelta, signal) {
     let res = null;
     try {
-      const token = await idToken();
-      res = await fetch('api/tutor', {
-        method: 'POST',
-        headers: Object.assign(
-          { 'Content-Type': 'application/json' },
-          token ? { Authorization: 'Bearer ' + token } : {},
-        ),
-        body: JSON.stringify(req),
-        signal,
-      });
+      res = await postTutor(req, signal);
     } catch (e) {
       if (signal && signal.aborted) throw e;
       res = null; // mạng lỗi → thử chế độ thử nếu có khóa
@@ -275,22 +285,41 @@
     let usage = null;
     let cached = false;
     let streamError = null;
-    await readSse(
-      res,
-      function (evt) {
-        if (evt.t) {
-          full += evt.t;
-          onDelta(evt.t);
-        }
-        if (evt.error) streamError = evt.error;
-        if (evt.model) model = evt.model;
-        if (evt.usage) usage = evt.usage;
-        if (evt.cached) cached = true;
-      },
-      signal,
-    );
+    let warning = null;
+    let finished = false;
+    try {
+      await readSse(
+        res,
+        function (evt) {
+          if (evt.t) {
+            full += evt.t;
+            onDelta(evt.t);
+          }
+          if (evt.error) streamError = evt.error;
+          if (evt.warning) warning = evt.warning;
+          if (evt.model) model = evt.model;
+          if (evt.usage) usage = evt.usage;
+          if (evt.cached) cached = true;
+          if (evt.done) finished = true;
+        },
+        signal,
+      );
+    } catch (e) {
+      if (signal && signal.aborted) throw e;
+      streamError = streamError || 'Mất kết nối giữa chừng. Em kiểm tra mạng rồi hỏi lại nhé.';
+    }
+    if (!finished && !streamError && !(signal && signal.aborted)) {
+      streamError = 'Kết nối tới Gia sư AI bị ngắt giữa chừng. Em hỏi lại nhé.';
+    }
     if (streamError && !full) throw new Error(streamError);
-    return { text: full, model: model, via: 'server', warning: streamError, usage: usage, cached: cached };
+    return {
+      text: full,
+      model: model,
+      via: 'server',
+      warning: streamError || warning,
+      usage: usage,
+      cached: cached,
+    };
   }
 
   // -------------------------------------------------------------------------
@@ -357,25 +386,24 @@
   async function roadmap(summary, signal) {
     let res = null;
     try {
-      const token = await idToken();
-      res = await fetch('api/tutor', {
-        method: 'POST',
-        headers: Object.assign(
-          { 'Content-Type': 'application/json' },
-          token ? { Authorization: 'Bearer ' + token } : {},
-        ),
-        body: JSON.stringify({ task: 'roadmap', summary: summary }),
-        signal,
-      });
+      res = await postTutor({ task: 'roadmap', summary: summary }, signal);
     } catch (e) {
       if (signal && signal.aborted) throw e;
       res = null;
     }
     const ct = res ? res.headers.get('content-type') || '' : '';
-    const noBackend = !res || res.status === 404 || res.status === 405 || res.status === 501 ||
-      ct.indexOf('application/json') === -1;
+    const noBackend = !res || res.status === 404 || res.status === 405 || res.status === 501;
     if (!noBackend) {
-      const data = await res.json();
+      let data = null;
+      try {
+        // Máy chủ giữ kết nối bằng dấu cách trước JSON — JSON.parse bỏ qua được.
+        data = JSON.parse((await res.text()).trim() || 'null');
+      } catch (e) {
+        data = null;
+      }
+      if (!data || ct.indexOf('application/json') === -1) {
+        throw new Error('Gia sư AI đang gặp lỗi (' + res.status + '). Em thử lại sau ít phút nhé.');
+      }
       if (!res.ok || !data.plan) throw new Error(data.error || 'Gia sư AI đang gặp lỗi (' + res.status + ').');
       return data;
     }

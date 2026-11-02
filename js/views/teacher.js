@@ -70,7 +70,7 @@
       const input = el('input', {
         class: 'field',
         type: 'text',
-        placeholder: 'Ví dụ: Toán 11A1',
+        placeholder: 'Ví dụ: Toán 7A1',
         value: state.newName,
         disabled: state.creating,
         oninput: function (e) {
@@ -200,6 +200,21 @@
       }
       state.loading = false;
       render();
+      startWatch();
+    }
+
+    // Realtime: tiến độ và câu hỏi mới của học sinh hiện ngay trên màn hình.
+    let unwatch = null;
+    function startWatch() {
+      if (unwatch) unwatch();
+      unwatch = null;
+      if (!state.cls) return;
+      unwatch = room.watchMembers(code, function (members) {
+        if (JSON.stringify(members) === JSON.stringify(state.members)) return;
+        state.members = members;
+        // Đang gõ phản hồi thì không vẽ lại (mất chữ); lần vẽ sau sẽ cập nhật.
+        if (state.replyFor === null && !state.loading) render();
+      });
     }
 
     function sortedMembers() {
@@ -579,6 +594,10 @@
 
     render();
     void load();
+    return function cleanup() {
+      if (unwatch) unwatch();
+      unwatch = null;
+    };
   }
 
   // ===========================================================================
@@ -622,10 +641,9 @@
     const container = el('div', {});
     const code = params && params.class ? room.normaliseCode(params.class) : null;
 
-    if (code) classDetailScreen(container, code);
-    else classListScreen(container);
+    const cleanup = code ? classDetailScreen(container, code) : classListScreen(container);
 
-    return container;
+    return { node: container, cleanup: typeof cleanup === 'function' ? cleanup : null };
   }
 
   AM.views = AM.views || {};

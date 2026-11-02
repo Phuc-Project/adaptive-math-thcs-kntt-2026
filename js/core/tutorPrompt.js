@@ -28,7 +28,7 @@
   'use strict';
 
   /** Tăng số này khi đổi prompt → khoá cache cũ tự hết hiệu lực. */
-  const PROMPT_VERSION = 3;
+  const PROMPT_VERSION = 4;
 
   const MODES = {
     explain: 'Vì sao đúng / sai',
@@ -44,13 +44,19 @@
    *   maxOut  — maxOutputTokens (Gemini tính CẢ token suy nghĩ vào đây)
    *   solImg  — có gửi ảnh hướng dẫn giải chính thức để đối chiếu không
    */
+  //
+  // maxOut phải đủ rộng: Gemini 3 tính token SUY NGHĨ vào maxOutputTokens, nên
+  // mức cũ (1024–4096) hay bị nuốt hết vào phần suy nghĩ → câu trả lời rỗng hoặc
+  // cụt giữa chừng, lộ trình JSON bị cắt nên "không đọc được". Độ dài thực tế đã
+  // bị giới hạn bằng số từ trong MODE_RULES; trần này chỉ để không bị cắt oan
+  // (chỉ tính tiền token thực dùng, không tính theo trần).
   const MODE_CFG = {
-    hint: { think: 'low', maxOut: 1024, solImg: false },
-    ask: { think: 'low', maxOut: 1536, solImg: false },
-    explain: { think: 'low', maxOut: 1536, solImg: true },
-    check: { think: 'medium', maxOut: 2048, solImg: true },
-    solution: { think: 'medium', maxOut: 3072, solImg: true },
-    roadmap: { think: 'low', maxOut: 4096, solImg: false },
+    hint: { think: 'low', maxOut: 4096, solImg: false },
+    ask: { think: 'low', maxOut: 6144, solImg: false },
+    explain: { think: 'low', maxOut: 6144, solImg: true },
+    check: { think: 'medium', maxOut: 8192, solImg: true },
+    solution: { think: 'medium', maxOut: 12288, solImg: true },
+    roadmap: { think: 'low', maxOut: 16384, solImg: false },
   };
 
   const MODE_RULES = {

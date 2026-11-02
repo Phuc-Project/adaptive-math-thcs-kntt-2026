@@ -80,7 +80,6 @@
     '/theory',
     '/practice',
     '/exercises',
-    '/tutor',
     '/errors',
     '/classroom',
   ];
@@ -96,7 +95,7 @@
    *     asking for the login form is an explicit request for it.
    *
    *  2. A teacher's home is their class list, and the learner screens are not
-   *     offered at all — a teacher account has no diagnostic, no learning path
+   *     offered at all (Gia sư AI is the exception: teachers use it too) — a teacher account has no diagnostic, no learning path
    *     and no error notebook to render.
    *
    *  3. The admin route is gated. The client-side check here is only about not

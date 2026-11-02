@@ -172,40 +172,65 @@
    * collection existed, say — it falls back to `student`. Either way the rules
    * reject anything outside student/teacher on create.
    */
+  function profileFromDoc(user, data) {
+    return {
+      uid: user.uid,
+      email: data.email || user.email || '',
+      displayName: data.displayName || user.displayName || '',
+      role: normaliseRole(data.role),
+      classCode: data.classCode || null,
+      className: data.className || null,
+      grade: data.grade || null,
+      goal: data.goal || null,
+      xp: data.xp || 0,
+      level: data.level || 0,
+      currentStreak: data.currentStreak || 0,
+      masteredTopics: data.masteredTopics || 0,
+      totalQuestions: data.totalQuestions || 0,
+      hasDiagnostic: data.hasDiagnostic === true,
+    };
+  }
+
+  /**
+   * Tạo users/{uid} đúng MỘT lần, an toàn khi hai luồng cùng tạo.
+   *
+   * Khi đăng ký, register() và onAuthStateChanged cùng chạy. Trước đây cả hai
+   * đều gọi set(): luồng đến sau biến thành một lần *update* đụng vào
+   * createdAt/email — firestore.rules từ chối, và luồng onAuthStateChanged rơi
+   * về hồ sơ "học sinh" tạm. Kết quả: giáo viên vừa đăng ký lại thấy giao diện
+   * học sinh. Giờ bên đến sau chỉ đọc lại tài liệu bên kia đã tạo.
+   */
+  async function createProfileOnce(ref, fresh) {
+    try {
+      await ref.set(fresh);
+      return fresh;
+    } catch (err) {
+      const again = await ref.get();
+      if (again.exists) return again.data() || {};
+      throw err;
+    }
+  }
+
   async function loadOrCreateProfile(user) {
     const ref = userDoc(user.uid);
+    // Chụp ý định đăng ký TRƯỚC khi chờ mạng: register()/Google có thể xoá nó
+    // trong lúc ref.get() đang chạy.
+    const intentAtStart = pendingRegistration;
     const snap = await ref.get();
 
     if (snap.exists) {
       const data = snap.data() || {};
       // Best-effort activity stamp; failing this must not block sign-in.
       ref.update({ lastLoginAt: fb.serverTimestamp() }).catch(function () {});
-      return {
-        uid: user.uid,
-        email: data.email || user.email || '',
-        displayName: data.displayName || user.displayName || '',
-        role: normaliseRole(data.role),
-        classCode: data.classCode || null,
-        className: data.className || null,
-        grade: data.grade || null,
-        goal: data.goal || null,
-        xp: data.xp || 0,
-        level: data.level || 0,
-        currentStreak: data.currentStreak || 0,
-        masteredTopics: data.masteredTopics || 0,
-        totalQuestions: data.totalQuestions || 0,
-        hasDiagnostic: data.hasDiagnostic === true,
-      };
+      return profileFromDoc(user, data);
     }
 
     // Only honour the pending registration for the account it was started for.
     // A null uid means `register()` has not resumed yet, and the only account
     // being created is this one; a mismatched uid is stale and ignored.
+    const pending = pendingRegistration || intentAtStart;
     const intent =
-      pendingRegistration &&
-      (pendingRegistration.uid === null || pendingRegistration.uid === user.uid)
-        ? pendingRegistration
-        : null;
+      pending && (pending.uid === null || pending.uid === user.uid) ? pending : null;
 
     const fresh = {
       email: user.email || '',
@@ -225,7 +250,8 @@
       createdAt: fb.serverTimestamp(),
       lastLoginAt: fb.serverTimestamp(),
     };
-    await ref.set(fresh);
+    const stored = await createProfileOnce(ref, fresh);
+    if (stored !== fresh) return profileFromDoc(user, stored);
     return Object.assign({ uid: user.uid }, fresh, {
       createdAt: null,
       lastLoginAt: null,
@@ -318,7 +344,17 @@
     // rather than waiting for the auth-state listener to get there. If that
     // listener already won the race this is a no-op update: it now writes the
     // same role, instead of a role change the rules would reject.
-    await userDoc(cred.user.uid).set({
+    const ref = userDoc(cred.user.uid);
+    const existing = await ref.get().catch(function () {
+      return null;
+    });
+    if (existing && existing.exists) {
+      // onAuthStateChanged đã tạo hồ sơ (với đúng role đã chọn) — không ghi đè.
+      pendingRegistration = null;
+      await refreshProfileIfStale(cred.user);
+      return cred.user;
+    }
+    await createProfileOnce(ref, {
       email: cred.user.email || email.trim(),
       displayName: (name || '').trim(),
       role: chosenRole,
@@ -337,7 +373,23 @@
     });
 
     pendingRegistration = null;
+    await refreshProfileIfStale(cred.user);
     return cred.user;
+  }
+
+  /**
+   * Nếu onAuthStateChanged đã lỡ dựng hồ sơ tạm (degraded) hoặc đọc khi tài liệu
+   * chưa có, đọc lại một lần để giao diện hiện đúng vai trò ngay sau đăng ký.
+   */
+  async function refreshProfileIfStale(user) {
+    if (!state.user || state.user.uid !== user.uid) return;
+    if (state.profile && !state.profile.degraded) return;
+    try {
+      state.profile = await loadOrCreateProfile(user);
+      notify();
+    } catch (err) {
+      /* giữ hồ sơ hiện tại */
+    }
   }
 
   async function signIn(email, password) {
@@ -357,8 +409,38 @@
         role: desiredRole,
       };
     }
-    const cred = await fb.auth().signInWithPopup(provider);
-    return cred.user;
+    try {
+      const cred = await fb.auth().signInWithPopup(provider);
+      if (pendingRegistration) pendingRegistration.uid = cred.user.uid;
+      // Tài khoản Google mới: tự tạo hồ sơ với vai trò đã chọn (nếu chưa có),
+      // không phụ thuộc việc onAuthStateChanged chạy trước hay sau.
+      const ref = userDoc(cred.user.uid);
+      const snap = await ref.get();
+      if (!snap.exists) {
+        await createProfileOnce(ref, {
+          email: cred.user.email || '',
+          displayName: cred.user.displayName || '',
+          role: pendingRegistration ? pendingRegistration.role : 'student',
+          classCode: null,
+          className: null,
+          grade: null,
+          goal: null,
+          xp: 0,
+          level: 0,
+          currentStreak: 0,
+          masteredTopics: 0,
+          totalQuestions: 0,
+          hasDiagnostic: false,
+          createdAt: fb.serverTimestamp(),
+          lastLoginAt: fb.serverTimestamp(),
+        });
+      }
+      await refreshProfileIfStale(cred.user);
+      return cred.user;
+    } finally {
+      // Không để vai trò đã chọn "dính" sang lần đăng nhập sau trên cùng trang.
+      pendingRegistration = null;
+    }
   }
 
   async function resetPassword(email) {

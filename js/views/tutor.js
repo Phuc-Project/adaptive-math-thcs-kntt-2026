@@ -512,9 +512,27 @@
   // -------------------------------------------------------------------------
 
   function view(params, ctx) {
-    const grade = ctx.profile ? ctx.profile.grade : null;
+    const pageState = view._state || (view._state = { topicId: '', grade: null });
+    // Giáo viên (và học sinh chưa làm hồ sơ) không có lớp trong hồ sơ → cho tự chọn lớp.
+    const ownGrade = ctx.profile ? ctx.profile.grade : null;
+    const grade = ownGrade || pageState.grade || null;
     const topics = grade ? AM.topics.getTopicsByGrade(grade) : [];
-    const pageState = view._state || (view._state = { topicId: '' });
+    if (pageState.topicId && !topics.some((t) => t.id === pageState.topicId)) pageState.topicId = '';
+    const gradeSelect = ownGrade
+      ? null
+      : el(
+          'select',
+          {
+            class: 'field',
+            onchange: function (e) {
+              pageState.grade = Number(e.target.value) || null;
+              pageState.topicId = '';
+              AM.router.render();
+            },
+          },
+          el('option', { value: '' }, 'Chọn lớp'),
+          [6, 7, 8, 9].map((g) => el('option', { value: String(g), selected: g === grade || null }, 'Lớp ' + g)),
+        );
 
     const select = el(
       'select',
@@ -551,11 +569,13 @@
       el(
         'div',
         { class: 'card card-tight stack-sm' },
+        gradeSelect ? el('label', { class: 'field-label' }, 'Lớp') : null,
+        gradeSelect,
         el('label', { class: 'field-label' }, 'Bài này thuộc chủ đề nào? (giúp gia sư dạy đúng kiến thức đã học)'),
         select,
       ),
       panel({
-        key: 'page:' + (pageState.topicId || 'free'),
+        key: 'page:' + (grade || 0) + ':' + (pageState.topicId || 'free'),
         mode: 'hint',
         allowUpload: true,
         context: {

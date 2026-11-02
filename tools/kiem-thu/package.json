@@ -1,0 +1,16 @@
+{
+  "name": "adaptivemath-kiem-thu",
+  "private": true,
+  "description": "Kiểm thử đầu-cuối AdaptiveMath (Firebase + Gemini giả lập, không cần mạng)",
+  "scripts": {
+    "may-chu": "node server-test.mjs ../..",
+    "e2e": "node e2e.js ../..",
+    "luong": "node flow.js ../..",
+    "test": "node server-test.mjs ../.. && node e2e.js ../.. && node flow.js ../.."
+  },
+  "dependencies": {
+    "esbuild": "^0.24.0",
+    "katex": "0.16.9",
+    "playwright": "^1.48.0"
+  }
+}

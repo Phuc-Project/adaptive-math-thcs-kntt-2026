@@ -1,6 +1,8 @@
 /**
  * POST /api/tutor — Gia sư AI (Cloudflare Pages Function, chạy cùng tên miền với web).
  *
+ * Chạy trên Vercel (api/tutor.js, Edge) hoặc Cloudflare Pages Function.
+ *
  * Vì sao cần máy chủ: khóa Gemini mà nằm trong JavaScript của trang thì ai mở
  * F12 cũng lấy được. Function này giữ khóa trong biến môi trường, xác thực học
  * sinh bằng Firebase ID token, tự dựng prompt sư phạm (js/core/tutorPrompt.js)
@@ -180,35 +182,74 @@ function cleanMessages(messages) {
 // Gemini → SSE gọn cho trình duyệt
 // ---------------------------------------------------------------------------
 
+/** Lấy câu thông báo lỗi của Google (error.message) từ thân phản hồi. */
+function googleMessage(text) {
+  try {
+    const j = JSON.parse(text);
+    return (j && j.error && j.error.message) || '';
+  } catch (e) {
+    return String(text || '').slice(0, 200);
+  }
+}
+
 /**
  * Gọi Gemini, thử lần lượt các model. Với mỗi model, body được chỉnh cho hợp
  * (adaptBody: mức suy nghĩ, temperature). Nếu model từ chối tham số tuỳ chọn
  * (400) thì gửi lại một lần bản tối giản (stripOptional) thay vì báo lỗi.
+ *
+ * Chuyển sang model kế tiếp khi model hiện tại không dùng được: không tồn tại
+ * (404), không được phép (403), hết hạn mức riêng của model đó (429) hoặc
+ * Google đang lỗi/quá tải (500/503). Khóa sai (400 "API key not valid") thì
+ * dừng ngay — đổi model cũng vô ích.
  */
-async function callGemini(body, env, fetchImpl, method) {
-  const models = env.GEMINI_MODEL ? [env.GEMINI_MODEL] : MODEL_FALLBACKS;
+async function callGemini(body, env, fetchImpl, method, signal) {
+  const models = env.GEMINI_MODEL ? [env.GEMINI_MODEL].concat(MODEL_FALLBACKS.filter((m) => m !== env.GEMINI_MODEL)) : MODEL_FALLBACKS;
   const path = method === 'generate' ? ':generateContent' : ':streamGenerateContent?alt=sse';
+  const tried = [];
   let last = null;
   for (const model of models) {
     let payload = promptLib.adaptBody(body, model, env.TUTOR_THINKING);
     for (let attempt = 0; attempt < 2; attempt++) {
-      const res = await fetchImpl(GEMINI_BASE + model + path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-        body: JSON.stringify(payload),
-      });
+      let res;
+      try {
+        res = await fetchImpl(GEMINI_BASE + model + path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+          body: JSON.stringify(payload),
+          signal,
+        });
+      } catch (e) {
+        last = { status: 0, text: String((e && e.message) || e) };
+        break;
+      }
       if (res.ok) return { res, model };
       last = { status: res.status, text: await res.text().catch(() => '') };
       if (res.status !== 400 || attempt === 1) break;
+      if (/API key/i.test(last.text)) break;
       payload = promptLib.stripOptional(payload);
     }
-    // Chỉ thử model khác khi model không tồn tại / không được phép dùng.
-    if (last.status !== 404 && last.status !== 403) break;
+    tried.push(model + ':' + last.status);
+    if (last.status === 400 && /API key/i.test(last.text)) break;
+    if ([0, 404, 403, 429, 500, 503].indexOf(last.status) === -1) break;
   }
   const err = new Error('gemini ' + (last ? last.status : '?'));
   err.status = last ? last.status : 502;
-  err.detail = last ? last.text.slice(0, 300) : '';
+  err.detail = last ? googleMessage(last.text) : '';
+  err.tried = tried;
   throw err;
+}
+
+/** Thông báo lỗi tiếng Việt, đủ cụ thể để biết phải sửa gì. */
+function geminiErrorMessage(e) {
+  const d = String((e && e.detail) || '');
+  if (/API key not valid|API_KEY_INVALID|API key expired/i.test(d)) {
+    return 'Khóa GEMINI_API_KEY trên máy chủ không hợp lệ hoặc đã hết hạn. Tạo khóa mới tại aistudio.google.com rồi cập nhật biến môi trường và Redeploy.';
+  }
+  if (e && e.status === 429) return 'Gia sư AI đang quá tải hoặc đã hết hạn mức miễn phí hôm nay, em thử lại sau ít phút nhé.';
+  if (e && e.status === 403) return 'Khóa Gemini không có quyền gọi model (403). Kiểm tra khóa API và dự án Google AI Studio.';
+  if (e && e.status === 404) return 'Không tìm thấy model Gemini phù hợp (404). Đặt biến GEMINI_MODEL, ví dụ gemini-2.5-flash.';
+  if (e && e.status === 0) return 'Máy chủ không kết nối được tới Gemini (lỗi mạng).';
+  return 'Không gọi được Gemini (' + ((e && e.status) || 'lỗi mạng') + (d ? ': ' + d.slice(0, 160) : '') + ').';
 }
 
 function usageOf(meta) {
@@ -221,68 +262,117 @@ function usageOf(meta) {
   };
 }
 
-/** Chuyển luồng SSE của Gemini thành luồng gọn {t}/{done}; gọi onComplete(text) khi xong trọn vẹn. */
-function relay(upstream, model, onComplete) {
+const SSE_HEADERS = {
+  'Content-Type': 'text/event-stream; charset=utf-8',
+  'Cache-Control': 'no-store, no-transform',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Accel-Buffering': 'no',
+};
+
+/**
+ * Trả SSE cho trình duyệt NGAY LẬP TỨC rồi mới gọi Gemini bên trong luồng.
+ *
+ * Vercel Edge cắt yêu cầu nào chưa gửi được byte đầu tiên sau ~25 giây. Gemini
+ * có "suy nghĩ" nên đôi khi lâu hơn thế trước token đầu → trước đây học sinh
+ * nhận 504 trống trơn. Giờ máy chủ gửi dòng ": ping" mỗi vài giây cho tới khi
+ * có chữ, và mọi lỗi đều đi trong luồng dạng {"error": "..."}.
+ *
+ * produce(controller helpers) phải gọi Gemini và trả về Response upstream + model.
+ */
+function streamToClient(produce, onComplete) {
   const enc = new TextEncoder();
   const dec = new TextDecoder();
-  let buf = '';
-  let full = '';
-  let usage = null;
-  let failed = false;
-  const send = (controller, obj) => controller.enqueue(enc.encode('data: ' + JSON.stringify(obj) + '\n\n'));
-
-  function handleLine(line, controller) {
-    if (!line.startsWith('data:')) return;
-    const raw = line.slice(5).trim();
-    if (!raw || raw === '[DONE]') return;
-    let evt;
-    try {
-      evt = JSON.parse(raw);
-    } catch (e) {
-      return;
-    }
-    if (evt.usageMetadata) usage = usageOf(evt.usageMetadata);
-    if (evt.promptFeedback && evt.promptFeedback.blockReason) {
-      failed = true;
-      send(controller, { error: 'Câu hỏi bị bộ lọc an toàn từ chối. Em thử diễn đạt lại nhé.' });
-      return;
-    }
-    const cand = (evt.candidates || [])[0];
-    if (!cand) return;
-    // Bỏ phần "thought" nếu có (không hiển thị, không lưu).
-    const text = ((cand.content && cand.content.parts) || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
-    if (text) {
-      full += text;
-      send(controller, { t: text });
-    }
-    if (cand.finishReason === 'SAFETY') {
-      failed = true;
-      send(controller, { error: 'Câu trả lời bị bộ lọc an toàn chặn.' });
-    }
-    if (cand.finishReason === 'MAX_TOKENS') failed = true;
-  }
-
   return new ReadableStream({
     async start(controller) {
-      const reader = upstream.body.getReader();
+      let closed = false;
+      const write = (str) => {
+        if (closed) return;
+        try {
+          controller.enqueue(enc.encode(str));
+        } catch (e) {
+          closed = true;
+        }
+      };
+      const send = (obj) => write('data: ' + JSON.stringify(obj) + '\n\n');
+      let gotText = false;
+      write(': open\n\n');
+      const ping = setInterval(() => {
+        if (!gotText) write(': ping\n\n');
+      }, 5000);
+
+      let full = '';
+      let usage = null;
+      let failed = false;
+      let warning = null;
       try {
+        const { res: upstream, model } = await produce();
+        const reader = upstream.body.getReader();
+        let buf = '';
+        const handleLine = (line) => {
+          if (!line.startsWith('data:')) return;
+          const raw = line.slice(5).trim();
+          if (!raw || raw === '[DONE]') return;
+          let evt;
+          try {
+            evt = JSON.parse(raw);
+          } catch (e) {
+            return;
+          }
+          if (evt.usageMetadata) usage = usageOf(evt.usageMetadata);
+          if (evt.promptFeedback && evt.promptFeedback.blockReason) {
+            failed = true;
+            send({ error: 'Câu hỏi bị bộ lọc an toàn từ chối. Em thử diễn đạt lại nhé.' });
+            return;
+          }
+          const cand = (evt.candidates || [])[0];
+          if (!cand) return;
+          // Bỏ phần "thought" nếu có (không hiển thị, không lưu).
+          const text = ((cand.content && cand.content.parts) || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
+          if (text) {
+            gotText = true;
+            full += text;
+            send({ t: text });
+          }
+          if (cand.finishReason === 'SAFETY' || cand.finishReason === 'PROHIBITED_CONTENT') {
+            failed = true;
+            send({ error: 'Câu trả lời bị bộ lọc an toàn chặn.' });
+          } else if (cand.finishReason === 'MAX_TOKENS') {
+            failed = true;
+            warning = 'Câu trả lời dài quá nên bị cắt bớt. Em bấm "Gửi" với câu "tiếp tục" để xem phần còn lại.';
+          } else if (cand.finishReason === 'RECITATION') {
+            failed = true;
+            warning = 'Gia sư dừng giữa chừng (trùng nội dung có bản quyền). Em hỏi lại theo cách khác nhé.';
+          }
+        };
         for (;;) {
           const { value, done } = await reader.read();
           if (done) break;
           buf += dec.decode(value, { stream: true });
           let idx;
           while ((idx = buf.indexOf('\n')) !== -1) {
-            handleLine(buf.slice(0, idx).replace(/\r$/, ''), controller);
+            handleLine(buf.slice(0, idx).replace(/\r$/, ''));
             buf = buf.slice(idx + 1);
           }
         }
-        if (buf) handleLine(buf, controller);
-        send(controller, { done: true, model, usage });
+        if (buf) handleLine(buf.replace(/\r$/, ''));
+        if (!full && !failed) {
+          failed = true;
+          send({ error: 'Gia sư AI không trả lời được câu này (phản hồi rỗng). Em thử hỏi lại nhé.' });
+        }
+        if (warning) send({ warning });
+        send({ done: true, model, usage });
         if (!failed && full && onComplete) onComplete(full);
       } catch (e) {
-        send(controller, { error: 'Mất kết nối với Gemini giữa chừng.' });
+        send({ error: e && e.status !== undefined ? geminiErrorMessage(e) : 'Mất kết nối với Gemini giữa chừng.' });
+        send({ done: true });
       } finally {
-        controller.close();
+        clearInterval(ping);
+        closed = true;
+        try {
+          controller.close();
+        } catch (e) {
+          /* đã đóng */
+        }
       }
     },
   });
@@ -347,7 +437,7 @@ function sseOnce(text, extra) {
 
 export async function handleTutor(request, env, fetchImpl = fetch, waitUntil = null) {
   if (!env.GEMINI_API_KEY) {
-    return json(503, { error: 'Máy chủ chưa cấu hình GEMINI_API_KEY.' });
+    return json(503, { error: 'Máy chủ chưa cấu hình GEMINI_API_KEY (Vercel → Settings → Environment Variables), cần Redeploy sau khi thêm.' });
   }
 
   let uid = 'anon';
@@ -367,7 +457,14 @@ export async function handleTutor(request, env, fetchImpl = fetch, waitUntil = n
       );
       uid = claims.sub;
     } catch (e) {
-      return json(401, { error: 'Cần đăng nhập để dùng Gia sư AI.', code: String(e.message) });
+      const code = String(e.message);
+      return json(401, {
+        error:
+          code === 'token-expired'
+            ? 'Phiên đăng nhập đã hết hạn — em tải lại trang rồi hỏi lại nhé.'
+            : 'Cần đăng nhập để dùng Gia sư AI (' + code + ').',
+        code,
+      });
     }
   }
   if (rateLimited(uid)) {
@@ -401,35 +498,22 @@ export async function handleTutor(request, env, fetchImpl = fetch, waitUntil = n
     if (hit) return sseOnce(hit, { cached: true });
   }
 
-  // 2) Chỉ tải ảnh lời giải khi chế độ cần đối chiếu.
-  const refImages = await loadRefs(refs, request, env, fetchImpl);
-  const solImages = promptLib.MODE_CFG[mode].solImg ? await loadRefs(solRefs, request, env, fetchImpl) : [];
-  const body = promptLib.buildGeminiBody({ mode, context, messages, refImages, solImages, uploads });
-
-  try {
-    const { res, model } = await callGemini(body, env, fetchImpl);
-    const onComplete = cacheKey
-      ? (text) => {
-          const p = cachePut(env, request, cacheKey, text);
-          if (waitUntil) waitUntil(p);
-        }
-      : null;
-    return new Response(relay(res, model, onComplete), {
-      headers: {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-store',
-        'X-Content-Type-Options': 'nosniff',
-      },
-    });
-  } catch (e) {
-    const status = e.status === 429 ? 429 : 502;
-    return json(status, {
-      error:
-        status === 429
-          ? 'Gia sư AI đang quá tải, em thử lại sau ít phút nhé.'
-          : 'Không gọi được Gemini (' + (e.status || 'lỗi mạng') + ').',
-    });
-  }
+  // 2) Trả luồng ngay; ảnh đề/lời giải và lời gọi Gemini chạy bên trong luồng.
+  const onComplete = cacheKey
+    ? (text) => {
+        const p = cachePut(env, request, cacheKey, text);
+        if (waitUntil) waitUntil(p);
+      }
+    : null;
+  const stream = streamToClient(async () => {
+    const [refImages, solImages] = await Promise.all([
+      loadRefs(refs, request, env, fetchImpl),
+      promptLib.MODE_CFG[mode].solImg ? loadRefs(solRefs, request, env, fetchImpl) : Promise.resolve([]),
+    ]);
+    const body = promptLib.buildGeminiBody({ mode, context, messages, refImages, solImages, uploads });
+    return callGemini(body, env, fetchImpl);
+  }, onComplete);
+  return new Response(stream, { headers: SSE_HEADERS });
 }
 
 const TOPIC_RE = /^[6-9]-C\d{1,2}-B\d{1,2}$/;
@@ -466,42 +550,110 @@ function cleanSummary(sm) {
   };
 }
 
-/** Lộ trình AI: gọi generateContent (không stream) với responseSchema, rồi kiểm lại JSON. */
+/**
+ * Lộ trình AI: gọi generateContent (không stream) với responseSchema, rồi kiểm lại JSON.
+ *
+ * Lập lộ trình cần suy nghĩ lâu hơn giới hạn ~25 giây "byte đầu tiên" của Vercel
+ * Edge, nên phản hồi được mở ngay và giữ kết nối bằng dấu cách (JSON.parse bỏ qua
+ * khoảng trắng đầu). Lỗi trả về trong cùng thân JSON: { error }.
+ */
 export async function handleRoadmap(req, env, fetchImpl = fetch) {
   const sm = cleanSummary(req.summary);
   if (!sm.grade || sm.topics.length === 0) {
     return json(400, { error: 'Thiếu dữ liệu hồ sơ năng lực để lập lộ trình.' });
   }
   const body = promptLib.buildRoadmapBody(sm);
-  let res, model;
-  try {
-    ({ res, model } = await callGemini(body, env, fetchImpl, 'generate'));
-  } catch (e) {
-    const status = e.status === 429 ? 429 : 502;
-    return json(status, {
-      error: status === 429 ? 'Gia sư AI đang quá tải, em thử lại sau ít phút nhé.' : 'Không gọi được Gemini (' + (e.status || 'lỗi mạng') + ').',
-    });
-  }
+  const enc = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const ping = setInterval(() => {
+        try {
+          controller.enqueue(enc.encode(' '));
+        } catch (e) {
+          /* đã đóng */
+        }
+      }, 5000);
+      let out;
+      try {
+        out = await buildRoadmap(body, sm, env, fetchImpl);
+      } catch (e) {
+        out = { error: e && e.status !== undefined ? geminiErrorMessage(e) : 'Gia sư AI đang gặp lỗi, em thử lại nhé.' };
+      }
+      clearInterval(ping);
+      controller.enqueue(enc.encode(JSON.stringify(out)));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store, no-transform', 'X-Accel-Buffering': 'no' },
+  });
+}
+
+async function buildRoadmap(body, sm, env, fetchImpl) {
+  const { res, model } = await callGemini(body, env, fetchImpl, 'generate');
   let raw = null;
   let usageMeta = null;
+  let finish = null;
   try {
     const data = await res.json();
     usageMeta = data.usageMetadata || null;
     const cand = (data.candidates || [])[0];
+    finish = cand && cand.finishReason;
     const text = ((cand && cand.content && cand.content.parts) || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
     raw = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ''));
   } catch (e) {
-    return json(502, { error: 'Gia sư AI trả về lộ trình không đọc được, em thử lại nhé.' });
+    return {
+      error:
+        finish === 'MAX_TOKENS'
+          ? 'Lộ trình AI dài quá nên bị cắt. Em chọn số tuần ít hơn rồi thử lại nhé.'
+          : 'Gia sư AI trả về lộ trình không đọc được, em thử lại nhé.',
+    };
   }
   const plan = promptLib.sanitizeRoadmap(raw, sm.topics.map((t) => t.id), sm.dailyMinutes);
-  if (!plan) return json(502, { error: 'Lộ trình AI trả về không hợp lệ, em thử lại nhé.' });
-  return json(200, { plan, model, usage: usageOf(usageMeta) });
+  if (!plan) return { error: 'Lộ trình AI trả về không hợp lệ, em thử lại nhé.' };
+  return { plan, model, usage: usageOf(usageMeta) };
+}
+
+/**
+ * GET /api/tutor — kiểm tra nhanh cấu hình máy chủ (không lộ khóa):
+ *   có GEMINI_API_KEY chưa, khóa có hợp lệ không, model nào dùng được.
+ * Mở thẳng https://<tên-miền>/api/tutor trên trình duyệt để xem.
+ */
+export async function handleHealth(env, fetchImpl = fetch) {
+  const out = {
+    ok: false,
+    hasKey: !!env.GEMINI_API_KEY,
+    requireAuth: env.TUTOR_REQUIRE_AUTH !== '0',
+    model: env.GEMINI_MODEL || null,
+    models: {},
+  };
+  if (!env.GEMINI_API_KEY) {
+    out.error = 'Chưa đặt biến môi trường GEMINI_API_KEY (Vercel → Project → Settings → Environment Variables), rồi Redeploy.';
+    return json(200, out);
+  }
+  const models = env.GEMINI_MODEL ? [env.GEMINI_MODEL].concat(MODEL_FALLBACKS) : MODEL_FALLBACKS;
+  for (const m of models) {
+    if (out.models[m]) continue;
+    try {
+      const res = await fetchImpl(GEMINI_BASE + m, { headers: { 'x-goog-api-key': env.GEMINI_API_KEY } });
+      out.models[m] = res.ok ? 'ok' : res.status + ' ' + googleMessage(await res.text().catch(() => '')).slice(0, 120);
+      if (res.ok && !out.ok) {
+        out.ok = true;
+        out.firstWorkingModel = m;
+      }
+    } catch (e) {
+      out.models[m] = 'lỗi mạng';
+    }
+  }
+  if (!out.ok) out.error = 'Không model nào dùng được với khóa hiện tại — xem chi tiết trong "models".';
+  return json(200, out);
 }
 
 export async function onRequestPost(context) {
   return handleTutor(context.request, context.env, fetch, context.waitUntil ? context.waitUntil.bind(context) : null);
 }
 
-export async function onRequestGet() {
-  return json(405, { error: 'Dùng POST.' });
+export async function onRequestGet(context) {
+  return handleHealth((context && context.env) || {}, fetch);
 }
