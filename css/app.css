@@ -3907,3 +3907,17 @@ details.debug pre {
     padding: 0.3rem 0.6rem;
   }
 }
+
+/* Điện thoại: bốn chế độ xếp lưới 2 cột, không phải vuốt ngang. */
+@media (max-width: 640px) {
+  .tutor-modes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: visible;
+  }
+  .tutor-mode {
+    justify-content: flex-start;
+    padding: 0.5rem 0.6rem;
+    font-size: 0.84rem;
+  }
+}
