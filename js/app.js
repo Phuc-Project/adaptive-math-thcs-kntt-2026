@@ -26,7 +26,6 @@
   R.register('/exercises', V.exercises);
   R.register('/tutor', V.tutor);
   R.register('/errors', V.errors);
-  R.register('/digital-tasks', V.digitalTasks);
 
   /**
    * Anything unrecognised shows the dashboard for whichever role is signed in.
@@ -93,6 +92,13 @@
           'hoặc cho phép lưu dữ liệu cho trang này, rồi tải lại.',
       );
       return;
+    }
+
+    // Chức năng "Nhiệm vụ số" đã bỏ: dọn bài làm cũ còn nằm trong trình duyệt.
+    try {
+      window.localStorage.removeItem('am_digital_tasks_v1');
+    } catch (err) {
+      // Không xoá được thì thôi — khóa này không còn được đọc ở đâu nữa.
     }
 
     // Wait for Firebase to report whether anybody is signed in, so no page ever

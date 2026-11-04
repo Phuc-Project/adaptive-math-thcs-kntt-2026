@@ -5,7 +5,6 @@
 Viết bằng **HTML + CSS + JavaScript thuần**. Không framework, không bundler, **không có bước build** — Firebase được nạp qua bản `compat` chạy thẳng bằng thẻ `<script>`.
 
 - 1 472 câu hỏi trắc nghiệm biên soạn mới, phủ 92 chủ đề Toán lớp 6, 7, 8, 9, kèm 92 mục lý thuyết. Mỗi chủ đề có câu hỏi ở bốn mức Nhận biết, Thông hiểu, Vận dụng và Vận dụng cao.
-- **Nhiệm vụ số** (`#/digital-tasks`): 9 nhiệm vụ phát triển năng lực số theo 5 biện pháp của đề án (Ví dụ 4.1 → 4.9) — kiểm chứng lời giải số, phiếu tự theo dõi, hợp tác nhóm, sản phẩm số; có mức hỗ trợ thích ứng, chấm tự động và phiếu học tập lưu trên máy
 - **Bài tập cá nhân hóa** (`#/exercises`): 3 633 bài tập lớp 6–9 tách từ 8 tài liệu PDF trong `data/`, phân loại khối → chương → chủ đề (lớp 6: 1 457 · lớp 7: 772 · lớp 8: 877 · lớp 9: 527). Gợi ý mỗi ngày theo hồ sơ năng lực + BKT; câu trắc nghiệm có đáp án được chấm ngay, bài tự luận tự đánh giá; lớp 8 tập 2 có kèm hướng dẫn giải
 - **Kiểm tra đầu vào theo từng chương**: chọn chương → CAT chỉ chạy trên các chủ đề của chương đó; kết quả các chương cộng dồn vào một hồ sơ năng lực
 - **Gia sư AI (Gemini)** (`#/tutor` và nút "Hỏi gia sư AI" ở mỗi bài tập / câu luyện tập): 5 chế độ — **Vì sao đúng / sai** (phân tích đúng đáp án em đã chọn, đoán em nghĩ sai ở đâu, ghi "Loại lỗi"; có ở bài tập trắc nghiệm, luyện tập và sổ tay lỗi sai), Gợi ý bước đầu (không lộ đáp số), Kiểm tra bài làm (gõ hoặc chụp ảnh), Lời giải chi tiết (kèm bài tương tự), Hỏi tự do; trả lời dạng luồng, hiển thị LaTeX
@@ -212,7 +211,6 @@ Vì sao bắt buộc: tên file không kèm mã băm nội dung (dự án không
 ├── firebase.json            # Chỉ để deploy rules bằng CLI (site chạy ở Cloudflare)
 ├── css/app.css              # Toàn bộ giao diện
 ├── data/questions.js        # 6 205 câu hỏi + lý thuyết 39 bài (~9 MB)
-├── data/examples.js         # 9 nhiệm vụ số (Ví dụ 4.1→4.9 của chương 4 đề án)
 ├── data/exercises.js        # 3 633 bài tập tự luyện lớp 6–9 (siêu dữ liệu, ~1,2 MB)
 ├── data/exercises/img/      # ảnh đề + hướng dẫn giải đã cắt (.webp, ~4 200 file)
 ├── tools/import-exercises/  # script tách bài tập từ PDF → xem README trong thư mục

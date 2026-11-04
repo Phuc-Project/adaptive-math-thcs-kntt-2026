@@ -157,7 +157,7 @@ async function register(page, role, name, email) {
 
     // ------------------------------------------------------------------ MỌI TRANG
     console.log('\n[5] Mở mọi trang (học sinh & giáo viên) — không được lỗi');
-    const studentRoutes = ['#/', '#/onboarding', '#/diagnostic', '#/profile', '#/learning-path', '#/theory', '#/practice', '#/exercises', '#/tutor', '#/errors', '#/classroom', '#/digital-tasks', '#/admin', '#/teacher', '#/khongtontai'];
+    const studentRoutes = ['#/', '#/onboarding', '#/diagnostic', '#/profile', '#/learning-path', '#/theory', '#/practice', '#/exercises', '#/tutor', '#/errors', '#/classroom', '#/admin', '#/teacher', '#/khongtontai'];
     for (const r of studentRoutes) {
       await go(S, r);
       const crashed = await S.isVisible('text=Trang này gặp sự cố');

@@ -48,7 +48,7 @@ const PORT = 8500 + Math.floor(Math.random() * 90);
   }
   const S = await mk('hs@test.vn', 'Nguyễn An');
   await S.evaluate(() => AM.store.saveProfile({ grade: 8, goal: 'cuoi-ky', dailyMinutes: 30, deadline: null, selfLevel: 'tb', weakTopicIds: [], sessionLength: 'auto' }));
-  await sweep(S, ['#/', '#/thu', '#/theory?topic=8-C2-B1&from=thu', '#/practice?topic=8-C2-B1&levels=N,H,V,T&count=10&from=thu', '#/exercises?topic=8-C2-B1&from=thu', '#/exercises', '#/tutor', '#/learning-path', '#/errors', '#/classroom', '#/diagnostic', '#/profile', '#/onboarding', '#/digital-tasks'], 'hs');
+  await sweep(S, ['#/', '#/thu', '#/theory?topic=8-C2-B1&from=thu', '#/practice?topic=8-C2-B1&levels=N,H,V,T&count=10&from=thu', '#/exercises?topic=8-C2-B1&from=thu', '#/exercises', '#/tutor', '#/learning-path', '#/errors', '#/classroom', '#/diagnostic', '#/profile', '#/onboarding'], 'hs');
   const T = await mk('gv@test.vn', 'Cô Lan', 'teacher');
   await sweep(T, ['#/teacher', '#/tutor'], 'gv');
   const G = await browser.newContext({ viewport: { width: 375, height: 812 } });

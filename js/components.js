@@ -91,7 +91,6 @@
     { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy', group: 'Hỗ trợ trong lúc học', tab: true },
     { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'rule', group: 'Hỗ trợ trong lúc học' },
     { route: '#/classroom', label: 'Lớp học', icon: 'groups', group: 'Hỗ trợ trong lúc học', tab: true },
-    { route: '#/digital-tasks', label: 'Nhiệm vụ số', icon: 'task_alt', group: 'Hỗ trợ trong lúc học' },
   ];
 
   const TEACHER_NAV = [

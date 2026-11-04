@@ -127,7 +127,7 @@ const crashed = async (p) => (await p.isVisible('text=Trang này gặp sự cố
       const m = db.docs.get('classes/' + code + '/members/' + uid) || {};
       check('Tiến độ (lớp 8) tự đồng bộ vào lớp', m.grade === 8, JSON.stringify(m));
       // các trang sau khi có dữ liệu
-      for (const r of ['#/', '#/profile', '#/learning-path', '#/exercises', '#/errors', '#/practice', '#/theory', '#/digital-tasks']) {
+      for (const r of ['#/', '#/profile', '#/learning-path', '#/exercises', '#/errors', '#/practice', '#/theory']) {
         await S.evaluate((h) => (location.hash = h), r);
         await S.waitForTimeout(500);
         check('HS (đã có dữ liệu) mở ' + r, !(await crashed(S)), await crashed(S));
