@@ -77,17 +77,19 @@
    * greyed out.
    */
   // Thứ tự theo tần suất dùng: việc hằng ngày ở trên, việc thỉnh thoảng ở nhóm "Khác".
+  // Thứ tự và tên mục giữ như bản gốc; "Bài học dùng thử" đứng ngay sau Trang chính.
+  // `tab: true` = cũng hiện ở thanh tab dưới trên điện thoại.
   const STUDENT_NAV = [
     { route: '#/', label: 'Trang chính', icon: 'home', tab: true },
     { route: '#/thu', label: 'Bài học dùng thử', icon: 'auto_awesome' },
-    { route: '#/exercises', label: 'Bài tập', icon: 'edit_note', tab: true },
-    { route: '#/learning-path', label: 'Lộ trình học', icon: 'route' },
+    { route: '#/profile', label: 'Hồ sơ năng lực', icon: 'insights' },
+    { route: '#/learning-path', label: 'Lộ trình học', icon: 'map' },
+    { route: '#/diagnostic', label: 'Kiểm tra đầu vào', icon: 'quiz' },
+    { route: '#/exercises', label: 'Bài tập cá nhân hóa', tabLabel: 'Bài tập', icon: 'library_books', tab: true },
     { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy', tab: true },
-    { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'rule' },
+    { route: '#/digital-tasks', label: 'Nhiệm vụ số', icon: 'task_alt' },
+    { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'error' },
     { route: '#/classroom', label: 'Lớp học', icon: 'groups', tab: true },
-    { route: '#/diagnostic', label: 'Kiểm tra đầu vào', icon: 'quiz', group: 'Khác' },
-    { route: '#/profile', label: 'Hồ sơ năng lực', icon: 'insights', group: 'Khác' },
-    { route: '#/digital-tasks', label: 'Nhiệm vụ số', icon: 'task_alt', group: 'Khác' },
   ];
 
   const TEACHER_NAV = [
@@ -163,7 +165,7 @@
           'a',
           { href: item.route, class: isActive(item, activeRoute) ? 'is-active' : null, 'aria-current': isActive(item, activeRoute) ? 'page' : null },
           icon(item.icon),
-          item.label,
+          item.tabLabel || item.label,
         ),
       ),
       rest.length
