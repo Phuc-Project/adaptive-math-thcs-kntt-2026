@@ -76,20 +76,22 @@
    * work. The menus are therefore disjoint rather than one list with items
    * greyed out.
    */
-  // Thứ tự theo tần suất dùng: việc hằng ngày ở trên, việc thỉnh thoảng ở nhóm "Khác".
-  // Thứ tự và tên mục giữ như bản gốc; "Bài học dùng thử" đứng ngay sau Trang chính.
-  // `tab: true` = cũng hiện ở thanh tab dưới trên điện thoại.
+  // Thanh bên đi theo "vòng học 5 bước" của hệ thống (Thiết lập → Kiểm tra →
+  // Hồ sơ → Lộ trình → Luyện tập), rồi đến nhóm "Hỗ trợ trong lúc học".
+  // `step` = số bước, `tone` = màu của bước (theo sơ đồ thiết kế hệ thống),
+  // `hint` = một dòng nói bước đó làm gì. `tab: true` = có ở thanh tab điện thoại.
   const STUDENT_NAV = [
     { route: '#/', label: 'Trang chính', icon: 'home', tab: true },
     { route: '#/thu', label: 'Bài học dùng thử', icon: 'auto_awesome' },
-    { route: '#/profile', label: 'Hồ sơ năng lực', icon: 'insights' },
-    { route: '#/learning-path', label: 'Lộ trình học', icon: 'map' },
-    { route: '#/diagnostic', label: 'Kiểm tra đầu vào', icon: 'quiz' },
-    { route: '#/exercises', label: 'Bài tập cá nhân hóa', tabLabel: 'Bài tập', icon: 'library_books', tab: true },
-    { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy', tab: true },
-    { route: '#/digital-tasks', label: 'Nhiệm vụ số', icon: 'task_alt' },
-    { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'error' },
-    { route: '#/classroom', label: 'Lớp học', icon: 'groups', tab: true },
+    { route: '#/onboarding', label: 'Thiết lập', hint: 'Lớp, mục tiêu, giờ học', icon: 'edit_square', step: 1, tone: 'cyan', group: 'Vòng học 5 bước' },
+    { route: '#/diagnostic', label: 'Kiểm tra', hint: 'Theo từng chủ đề', icon: 'assignment_turned_in', step: 2, tone: 'cyan', group: 'Vòng học 5 bước' },
+    { route: '#/profile', label: 'Hồ sơ', hint: 'Chủ đề nào còn yếu', icon: 'show_chart', step: 3, tone: 'lime', group: 'Vòng học 5 bước' },
+    { route: '#/learning-path', label: 'Lộ trình', hint: 'Xếp bài mỗi ngày', icon: 'route', step: 4, tone: 'lime', group: 'Vòng học 5 bước' },
+    { route: '#/exercises', label: 'Luyện tập', hint: 'Có gia sư AI gợi ý', icon: 'bolt', step: 5, tone: 'violet', group: 'Vòng học 5 bước', tab: true },
+    { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy', group: 'Hỗ trợ trong lúc học', tab: true },
+    { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'rule', group: 'Hỗ trợ trong lúc học' },
+    { route: '#/classroom', label: 'Lớp học', icon: 'groups', group: 'Hỗ trợ trong lúc học', tab: true },
+    { route: '#/digital-tasks', label: 'Nhiệm vụ số', icon: 'task_alt', group: 'Hỗ trợ trong lúc học' },
   ];
 
   const TEACHER_NAV = [
@@ -129,16 +131,20 @@
         group = item.group;
         nodes.push(el('div', { class: 'sidebar-group' }, group));
       }
+      const on = isActive(item, activeRoute);
       nodes.push(
         el(
           'a',
           {
-            class: U.cn('sidebar-link', isActive(item, activeRoute) && 'is-active'),
+            class: U.cn('sidebar-link', item.step && 'is-step', item.tone && 'tone-' + item.tone, on && 'is-active'),
             href: item.route,
-            'aria-current': isActive(item, activeRoute) ? 'page' : null,
+            'aria-current': on ? 'page' : null,
           },
           icon(item.icon),
-          item.label,
+          item.hint
+            ? el('span', { class: 'sidebar-text' }, el('span', {}, item.label), el('small', {}, item.hint))
+            : item.label,
+          item.step ? el('span', { class: 'sidebar-step', 'aria-label': 'Bước ' + item.step }, String(item.step)) : null,
         ),
       );
     }
@@ -195,7 +201,7 @@
                           onclick: () => sheet.remove(),
                         },
                         icon(item.icon),
-                        item.label,
+                        (item.step ? item.step + '. ' : '') + item.label,
                       ),
                     ),
                   ),

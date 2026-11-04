@@ -319,10 +319,12 @@ a {
 }
 
 .sidebar-group {
-  margin: 1.1rem 0.6rem 0.35rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: rgba(238, 244, 240, 0.55);
+  margin: 1.1rem 0.6rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(238, 244, 240, 0.5);
 }
 
 .sidebar-nav {
@@ -3934,5 +3936,106 @@ details.debug pre {
     text-align: center;
     line-height: 1.25;
     padding: 0.45rem 0.5rem;
+  }
+}
+
+
+/* ==========================================================================
+   Thanh bên theo "vòng học 5 bước" (sơ đồ thiết kế hệ thống 1.2)
+   Thiết lập, Kiểm tra: xanh lơ · Hồ sơ, Lộ trình: xanh chanh · Luyện tập: tím.
+   Số bước mờ ở góc phải; các bước nối nhau bằng một đường kẻ dọc dưới biểu tượng.
+   ========================================================================== */
+
+.sidebar-link.tone-cyan {
+  --step: #22d3ee;
+}
+
+.sidebar-link.tone-lime {
+  --step: #a3e635;
+}
+
+.sidebar-link.tone-violet {
+  --step: #a78bfa;
+}
+
+.sidebar-link.is-step {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+.sidebar-link.is-step > .material-symbols-outlined {
+  color: var(--step);
+}
+
+.sidebar-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.sidebar-text small {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: rgba(238, 244, 240, 0.58);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-link.is-step > .sidebar-text > span:first-child {
+  color: var(--step);
+  font-weight: 700;
+}
+
+.sidebar-step {
+  margin-left: auto;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: rgba(238, 244, 240, 0.22);
+}
+
+/* Đường nối giữa các bước */
+.sidebar-link.is-step + .sidebar-link.is-step::before {
+  content: '';
+  position: absolute;
+  left: calc(0.95rem + 0.675rem - 1px);
+  top: -0.55rem;
+  height: 0.7rem;
+  width: 2px;
+  border-radius: 1px;
+  background: rgba(238, 244, 240, 0.18);
+}
+
+/* Bước đang mở: nút xanh chanh, chữ và biểu tượng đậm màu bảng. */
+.sidebar-link.is-step.is-active > .material-symbols-outlined,
+.sidebar-link.is-step.is-active > .sidebar-text > span:first-child {
+  color: #1f3a06;
+}
+
+.sidebar-link.is-active .sidebar-text small {
+  color: rgba(31, 58, 6, 0.75);
+}
+
+.sidebar-link.is-active .sidebar-step {
+  color: rgba(31, 58, 6, 0.45);
+}
+
+.sidebar-text small {
+  font-size: 0.72rem;
+}
+
+.sidebar-nav {
+  gap: 0.2rem;
+}
+
+.sidebar-link {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+}
+
+/* Màn thấp: bỏ dòng ghi chú cuối để cả vòng học và nhóm hỗ trợ vừa một màn. */
+@media (max-height: 880px) {
+  .sidebar-foot {
+    display: none;
   }
 }
