@@ -228,6 +228,7 @@
         context: {
           grade: grade,
           topic: topic ? topic.chapterTitle + ' — ' + topic.title : null,
+          topicId: topic ? topic.id : null,
           lesson: lesson ? lesson.title : exam ? X.examTitle(exam) : null,
           label: item.n,
           kind: X.KIND_LABELS[item.k],

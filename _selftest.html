@@ -23,6 +23,7 @@
     <script src="js/core/questionBank.js"></script>
     <script src="js/core/exerciseBank.js"></script>
     <script src="js/core/tutorPrompt.js"></script>
+    <script src="js/core/tutorKnowledge.js"></script>
     <script src="js/core/tutor.js"></script>
     <script src="js/core/latex.js"></script>
     <script src="js/core/irt.js"></script>
@@ -619,6 +620,73 @@
         if (!window.katex) return true; // KaTeX CDN không có thì chỉ kiểm escape
         return /<ol>/.test(h) && /<ul>/.test(h) && (h.match(/class="katex/g) || []).length >= 2 ? true : h.slice(0, 200);
       });
+      check('tutor renderRich: % in math, decimal comma, unicode, macros render without errors', function () {
+        if (!window.katex) return true;
+        var h = AM.tutorUI.renderRichHtml('Giảm $20%$ còn $12,5$; $AB ∥ CD$, $AH ⊥ BC$, $√2$, $\\overarc{AB}$, $a \\chiahet 3$, $\\text{ƯCLN}(24,36)$');
+        var n = (h.match(/class="katex"/g) || []).length;
+        var err = /tex-error|katex-error/.test(h);
+        // "12,5" phải liền (không có khoảng cách dấu câu), "%" không được nuốt phần sau
+        var pct = h.indexOf('%') !== -1;
+        return n === 7 && !err && pct ? true : 'katex=' + n + ' err=' + err + ' pct=' + pct;
+      });
+      check('tutor renderRich: one stray $ does not flip the rest into math', function () {
+        if (!window.katex) return true;
+        var h = AM.tutorUI.renderRichHtml('Giá 50$ một vé.\n\nCâu 2: tính $a+b$ rồi \\(x=1\\).');
+        return (h.match(/class="katex"/g) || []).length === 2 && /50\$ một vé/.test(h) ? true : h.slice(0, 300);
+      });
+      check('tutor renderRich: bare LaTeX and \\begin{cases} without $ are wrapped', function () {
+        if (!window.katex) return true;
+        var h = AM.tutorUI.renderRichHtml('Vì \\widehat{A} = 90^\\circ, nên vuông.\n\\begin{cases} x+y=5 \\\\ x-y=1 \\end{cases}');
+        return (h.match(/class="katex"/g) || []).length === 2 && /nên vuông/.test(h) && h.indexOf('\\widehat') === -1 ? true : h.slice(0, 300);
+      });
+      check('tutor renderRich: markdown value table', function () {
+        var h = AM.tutorUI.renderRichHtml('| $x$ | $0$ | $1$ |\n|---|---|---|\n| $y$ | $2$ | $3$ |');
+        return /<table class="tutor-table">/.test(h) && (h.match(/<th>/g) || []).length === 3 && (h.match(/<td>/g) || []).length === 3 ? true : h.slice(0, 200);
+      });
+      check('latex: decimal comma joined, lists kept', function () {
+        var f = AM.latex.fixDecimalComma;
+        return f('S=12,5') === 'S=12{,}5' && f('(24,36)=12') === '(24,36)=12' && f('3,4,5') === '3,4,5' && f('19,7-1,6') === '19{,}7-1{,}6'
+          ? true : [f('S=12,5'), f('(24,36)=12'), f('3,4,5')].join(' | ');
+      });
+      check('tutor prompt v5: notation + self-check, grade limits, stronger thinking for solving modes', function () {
+        var si = AM_TUTOR_PROMPT.systemInstruction({ grade: 7 });
+        var cfg = AM_TUTOR_PROMPT.MODE_CFG;
+        return /decimal comma/i.test(si) && /VERIFY/.test(si) && /Pythagoras/.test(si) &&
+          !/Pythagoras/.test(AM_TUTOR_PROMPT.systemInstruction({ grade: 9 })) &&
+          cfg.solution.think === 'high' && cfg.check.think === 'high' && cfg.explain.think === 'medium' && cfg.hint.think === 'low'
+          ? true : si.slice(0, 200);
+      });
+      check('tutor knowledge: every topic has textbook facts, methods and common mistakes', function () {
+        var K = window.AM_TUTOR_KNOWLEDGE;
+        var missing = AM.topics.TOPICS.filter(function (t) {
+          var s = K.forTopic(t.id);
+          return !(s && /Kiến thức:/.test(s) && /Cách làm:/.test(s) && /Dễ sai:/.test(s));
+        }).map(function (t) { return t.id; });
+        return missing.length === 0 ? true : missing.join(',');
+      });
+      check('tutor knowledge renders: every formula in the knowledge base is valid KaTeX', function () {
+        if (!window.katex) return true;
+        var bad = [];
+        AM.topics.TOPICS.forEach(function (t) {
+          var h = AM.tutorUI.renderRichHtml(window.AM_TUTOR_KNOWLEDGE.forTopic(t.id));
+          if (/tex-error|katex-error/.test(h)) bad.push(t.id);
+        });
+        return bad.length === 0 ? true : bad.join(',');
+      });
+      check('tutor body: knowledge in CONTEXT, code tool + worked example only for solving modes', function () {
+        var kn = window.AM_TUTOR_KNOWLEDGE.forTopic('8-C2-B1');
+        var mk = function (mode) {
+          return AM_TUTOR_PROMPT.buildGeminiBody({ mode: mode, context: { grade: 8, topicId: '8-C2-B1' },
+            messages: [{ role: 'user', text: 'x' }], knowledge: kn });
+        };
+        var sol = mk('solution');
+        var hint = mk('hint');
+        var ctxText = sol.contents[0].parts[0].text;
+        var last = sol.contents[0].parts[sol.contents[0].parts.length - 1].text;
+        var stripped = AM_TUTOR_PROMPT.stripOptional(AM_TUTOR_PROMPT.adaptBody(sol, 'gemini-3.8-flash'));
+        return /KNOWLEDGE/.test(ctxText) && /hằng đẳng thức/i.test(ctxText) && sol.tools && !hint.tools &&
+          /EXAMPLE/.test(last) && /TOOL:/.test(last) && !stripped.tools ? true : JSON.stringify({ tools: !!sol.tools, hint: !!hint.tools });
+      });
       check('tutor prompt: hint never gives the final answer, answer key hidden', function () {
         var b = AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'hint', context: { grade: 7, answerKey: 'B' },
           messages: [{ role: 'user', text: 'giúp em' }], refImages: [{ mime: 'image/webp', data: 'AAAA' }] });
@@ -688,6 +756,41 @@
         var t = plan.weeks[0].days[0].tasks;
         return t.length === 2 && t[0].minutes + t[1].minutes === 45 ? true : JSON.stringify(t);
       });
+      check('sanitizeRoadmap maps neutral keys T01… back to real topic ids', function () {
+        var ids = ['7-C4-B1', '7-C5-B1', '7-C5-B2'];
+        var plan = AM_TUTOR_PROMPT.sanitizeRoadmap({ summary: 's', strengths: [], weaknesses: [], tips: [],
+          weeks: [{ week: 1, focus: 'f', goal: 'g', days: [{ day: 1, tasks: [
+            { type: 'exercise', topicId: 'T02', minutes: 10, detail: 'tam giác' },
+            { type: 'practice', topicId: 'T09', minutes: 10, detail: 'không tồn tại' },
+            { type: 'theory', topicId: '7-C5-B2', minutes: 10, detail: 'mã thật vẫn nhận' }] }] }] }, ids, 45);
+        var t = plan.weeks[0].days[0].tasks;
+        return t.length === 2 && t[0].topicId === '7-C5-B1' && t[1].topicId === '7-C5-B2' ? true : JSON.stringify(t);
+      });
+      check('roadmap prompt hides real ids (their C-number is not the chapter) and names chapters', function () {
+        var ctxR = { profile: { grade: 7, goal: 'cuoi-ky', dailyMinutes: 45, deadline: null, weakTopicIds: [] },
+          learner: AM.store.loadLearnerState(), knowledge: null };
+        var sm = AM.tutor.buildRoadmapSummary(ctxR, 1);
+        var text = AM_TUTOR_PROMPT.buildRoadmapBody(sm).contents[0].parts[0].text;
+        var i = sm.topics.findIndex(function (t) { return t.id === '7-C5-B1'; });
+        var row = text.split('\n').filter(function (l) { return l.indexOf(AM_TUTOR_PROMPT.topicKey(i) + '|') === 0; })[0] || '';
+        return !/\d-C\d+-B\d+/.test(text) && /Ch\.4 Tam giác bằng nhau\|Tổng các góc/.test(row) ? true : row;
+      });
+      check('practice warm-up never comes from another chapter', function () {
+        var pool7 = AM.bank.getPoolForGrade(7);
+        // Thành thạo cả chủ đề chương 3 (góc) lẫn chương 4 (tam giác); luyện "Hai tam giác bằng nhau".
+        var sel = AM.practiceSelector.selectPracticeQuestions(pool7, '7-C5-B2', ['N', 'H'], learner,
+          ['7-C4-B1', '7-C4-B2', '7-C5-B1', '7-C2-B1'], 99, { warmup: 3, practice: 6, assessment: 3 });
+        var bad = sel.warmup.filter(function (q) { return q.topicId !== '7-C5-B1'; });
+        var allOwn = sel.practice.concat(sel.assessment).every(function (q) { return q.topicId === '7-C5-B2'; });
+        return sel.warmup.length > 0 && bad.length === 0 && allOwn ? true : JSON.stringify(sel.warmup.map(function (q) { return q.topicId; }));
+      });
+      check('today: SRS reviews of another grade are not listed', function () {
+        var today = AM.util.todayVNStr();
+        var l = Object.assign({}, AM.store.loadLearnerState(), { completedActivities: [], srs: {
+          '8-C1-B1': { nextReviewDate: today, intervalDays: 1 }, '7-C5-B1': { nextReviewDate: today, intervalDays: 1 } } });
+        var ids = AM.today.computeTodayActivities(null, l, 7).map(function (a) { return a.activity.topicId; });
+        return ids.length === 1 && ids[0] === '7-C5-B1' ? true : ids.join(',');
+      });
       check('buildRoadmapSummary: every topic of the grade, no personal data', function () {
         var ctxR = { profile: { grade: 9, goal: 'vao-10', dailyMinutes: 60, deadline: null, weakTopicIds: [] },
           learner: AM.store.loadLearnerState(), knowledge: null };
@@ -737,14 +840,15 @@
 
 
       // --- 12j. Tiết kiệm API ------------------------------------------------
-      check('prompt "skill" is short: system instruction under 900 characters', function () {
+      // v5 thêm quy ước kí hiệu + bước tự kiểm tra (≈ 500 token, được implicit cache vì là tiền tố cố định).
+      check('prompt "skill" is short: system instruction under 2200 characters', function () {
         var n = AM_TUTOR_PROMPT.systemInstruction({ grade: 8 }).length;
-        return n < 900 ? true : 'dài ' + n;
+        return n < 2200 ? true : 'dài ' + n;
       });
       check('adaptBody: Gemini 3 → thinkingLevel by mode, default temperature', function () {
         var hint = AM_TUTOR_PROMPT.adaptBody(AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'hint', messages: [{ role: 'user', text: 'a' }] }), 'gemini-3.8-flash');
         var sol = AM_TUTOR_PROMPT.adaptBody(AM_TUTOR_PROMPT.buildGeminiBody({ mode: 'solution', messages: [{ role: 'user', text: 'a' }] }), 'gemini-3.8-flash');
-        return hint.generationConfig.thinkingConfig.thinkingLevel === 'low' && sol.generationConfig.thinkingConfig.thinkingLevel === 'medium' &&
+        return hint.generationConfig.thinkingConfig.thinkingLevel === 'low' && sol.generationConfig.thinkingConfig.thinkingLevel === 'high' &&
           hint.generationConfig.temperature === undefined && hint._think === undefined ? true : JSON.stringify([hint.generationConfig, sol.generationConfig]);
       });
       check('images: medium resolution first turn, low on follow-ups; no solution image for hints', function () {

@@ -15,7 +15,13 @@
   const U = AM.util;
   const getTopicById = AM.topics.getTopicById;
 
-  function computeTodayActivities(path, learner) {
+  /**
+   * @param grade  Khối lớp hiện tại của học sinh. Bài ôn SRS của chủ đề khối khác
+   *               (đã đổi lớp, hoặc từng mở bài học dùng thử Toán 8) bị bỏ qua để
+   *               "Hôm nay" không chen bài của chương/khối khác.
+   */
+  function computeTodayActivities(path, learner, grade) {
+    const curGrade = Number(grade) || (path && path.grade) || null;
     const today = U.todayVNStr();
     const activities = [];
     const completedSet = new Set(learner.completedActivities);
@@ -31,6 +37,7 @@
       const activityId = 'srs-' + topicId + '-' + today;
       if (completedSet.has(activityId)) continue; // reviewed already today
       const topic = getTopicById(topicId);
+      if (!topic || (curGrade && topic.grade !== curGrade)) continue;
       activities.push({
         key: 'srs-' + topicId,
         source: 'srs',

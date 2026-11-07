@@ -12,7 +12,8 @@ function createGemini(opts) {
     if (o.status !== 200) return new Response(JSON.stringify({ error: { code: o.status, message: 'API key not valid. Please pass a valid API key.', status: 'INVALID_ARGUMENT' } }), { status: o.status });
     if (url.includes(':generateContent')) {
       const prompt = body.contents[0].parts.map((p) => p.text || '').join('');
-      const ids = [...prompt.matchAll(/^([6-9]-C\d+-B\d+)\|/gm)].map((m) => m[1]);
+      // Bảng chủ đề dùng mã trung tính T01, T02… (tutorPrompt.topicKey) như Gemini thật nhìn thấy.
+      const ids = [...prompt.matchAll(/^(T\d{2})\|/gm)].map((m) => m[1]);
       const plan = {
         summary: 'Em đang tiến bộ tốt.',
         strengths: ['Tính toán cẩn thận'],

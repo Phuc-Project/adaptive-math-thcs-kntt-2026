@@ -68,6 +68,7 @@
       context: {
         grade: topic ? topic.grade : null,
         topic: topic ? topic.chapterTitle + ' — ' + topic.title : null,
+        topicId: topic ? topic.id : null,
         level: q.level,
         kind: 'Câu đã làm sai',
         questionText: lines.join('\n'),

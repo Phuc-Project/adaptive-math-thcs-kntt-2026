@@ -252,7 +252,7 @@
     const subtitle = ctx.hasProfile
       ? C.GRADE_LABELS[ctx.profile.grade] + '. Mục tiêu: ' + String(goalLabel || '').toLowerCase() + ', ' + ctx.profile.dailyMinutes + ' phút mỗi ngày.'
       : 'Học Toán THCS theo đúng chỗ em còn yếu.';
-    const today = ctx.hasDiagnostic ? AM.today.computeTodayActivities(ctx.path, ctx.learner) : [];
+    const today = ctx.hasDiagnostic ? AM.today.computeTodayActivities(ctx.path, ctx.learner, ctx.profile && ctx.profile.grade) : [];
 
     return ui.page(
       { title: 'Trang chính', activeRoute: '#/' },
