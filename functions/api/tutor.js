@@ -11,6 +11,9 @@
  * Biến môi trường (Cloudflare → Pages → Settings → Variables and Secrets):
  *   GEMINI_API_KEY      (bắt buộc, kiểu Secret)
  *   GEMINI_MODEL        (tuỳ chọn) — mặc định thử lần lượt MODEL_FALLBACKS
+ *   GEMINI_MODEL_STRONG (tuỳ chọn) — model mạnh hơn (vd. bản "pro") chỉ dùng cho hai chế độ
+ *                       cần lập luận nhất: "Lời giải chi tiết" và "Kiểm tra bài làm". Không
+ *                       dùng được (404/429…) thì tự quay về danh sách thường.
  *   TUTOR_THINKING      (tuỳ chọn) — ép mức suy nghĩ cho mọi yêu cầu: minimal|low|medium|high
  *   TUTOR_CACHE         (tuỳ chọn, binding KV) — cache câu trả lời dùng chung, bền 30 ngày
  *   FIREBASE_PROJECT_ID (tuỳ chọn) — mặc định adaptivemath-tmhp-2026
@@ -26,6 +29,7 @@
  *     → JSON { plan:{summary,strengths,weaknesses,weeks:[…],tips}, model }
  */
 import promptLib from '../../js/core/tutorPrompt.js';
+import knowledgeLib from '../../js/core/tutorKnowledge.js';
 
 const MODEL_FALLBACKS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash'];
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
@@ -202,8 +206,9 @@ function googleMessage(text) {
  * Google đang lỗi/quá tải (500/503). Khóa sai (400 "API key not valid") thì
  * dừng ngay — đổi model cũng vô ích.
  */
-async function callGemini(body, env, fetchImpl, method, signal) {
-  const models = env.GEMINI_MODEL ? [env.GEMINI_MODEL].concat(MODEL_FALLBACKS.filter((m) => m !== env.GEMINI_MODEL)) : MODEL_FALLBACKS;
+async function callGemini(body, env, fetchImpl, method, signal, preferModel) {
+  let models = env.GEMINI_MODEL ? [env.GEMINI_MODEL].concat(MODEL_FALLBACKS.filter((m) => m !== env.GEMINI_MODEL)) : MODEL_FALLBACKS;
+  if (preferModel) models = [preferModel].concat(models.filter((m) => m !== preferModel));
   const path = method === 'generate' ? ':generateContent' : ':streamGenerateContent?alt=sse';
   const tried = [];
   let last = null;
@@ -489,6 +494,8 @@ export async function handleTutor(request, env, fetchImpl = fetch, waitUntil = n
   const refs = (req.imageRefs || []).filter((r) => typeof r === 'string' && REF_RE.test(r)).slice(0, MAX_REFS);
   const solRefs = (req.solutionRefs || []).filter((r) => typeof r === 'string' && REF_RE.test(r)).slice(0, 2);
   const context = req.context && typeof req.context === 'object' ? req.context : {};
+  // Kiến thức SGK của đúng chủ đề — máy chủ tự tra theo mã, không nhận nội dung từ client.
+  const knowledge = TOPIC_RE.test(String(context.topicId || '')) ? knowledgeLib.forTopic(String(context.topicId)) : '';
 
   // 1) Cache: câu hỏi một chạm về cùng một bài → trả lại ngay, không tốn lượt gọi Gemini.
   const keyParts = promptLib.cacheKeyParts({ mode, quick: !!req.quick, messages, uploads, imageRefs: refs, solutionRefs: solRefs, context });
@@ -510,8 +517,9 @@ export async function handleTutor(request, env, fetchImpl = fetch, waitUntil = n
       loadRefs(refs, request, env, fetchImpl),
       promptLib.MODE_CFG[mode].solImg ? loadRefs(solRefs, request, env, fetchImpl) : Promise.resolve([]),
     ]);
-    const body = promptLib.buildGeminiBody({ mode, context, messages, refImages, solImages, uploads });
-    return callGemini(body, env, fetchImpl);
+    const body = promptLib.buildGeminiBody({ mode, context, messages, refImages, solImages, uploads, knowledge, codeExecution: env.TUTOR_CODE_EXEC !== '0' });
+    const strong = (mode === 'solution' || mode === 'check') && env.GEMINI_MODEL_STRONG ? String(env.GEMINI_MODEL_STRONG) : null;
+    return callGemini(body, env, fetchImpl, 'stream', undefined, strong);
   }, onComplete);
   return new Response(stream, { headers: SSE_HEADERS });
 }
@@ -527,6 +535,7 @@ function cleanSummary(sm) {
       id: String(t.id),
       title: String(t.title || '').slice(0, 120),
       chapter: Number(t.chapter) || 0,
+      chapterTitle: String(t.chapterTitle || '').slice(0, 120),
       mastery: Math.max(0, Math.min(1, Number(t.mastery) || 0)),
       tested: !!t.tested,
       practiced: !!t.practiced,

@@ -15,6 +15,11 @@
   'use strict';
 
   const U = AM.util;
+
+  function AM_ROADMAP_VERSION() {
+    const P = window.AM_TUTOR_PROMPT;
+    return (P && P.ROADMAP_VERSION) || 1;
+  }
   const el = U.el;
   const ui = AM.ui;
 
@@ -86,6 +91,7 @@
             builtAt: new Date().toISOString(),
             basedOn: ctx.knowledge ? ctx.knowledge.sessionId : null,
             weeks: RT.weeks,
+            v: AM_ROADMAP_VERSION(),
             done: {},
           };
         });
@@ -177,7 +183,7 @@
             'div',
             { class: 'row' },
             ui.pill(meta.label, meta.tone, meta.icon),
-            el('strong', {}, topic ? topic.title : t.topicId),
+            el('strong', {}, topic ? 'Chương ' + topic.chapter + ' · ' + topic.title : t.topicId),
             el('span', { class: 'muted-sm' }, t.minutes + ' phút'),
           ),
           t.detail ? el('div', { class: 'muted-sm' }, t.detail) : null,
@@ -200,6 +206,8 @@
         ),
       );
       const stale = ctx.knowledge && r.basedOn && r.basedOn !== ctx.knowledge.sessionId;
+      // Lộ trình lập trước bản sửa mã chủ đề có thể đã ghép nhầm chương.
+      const oldFormat = (r.v || 1) < AM_ROADMAP_VERSION();
       return [
         el(
           'p',
@@ -208,6 +216,9 @@
             ' · đã xong ' + finished + '/' + total + ' nhiệm vụ',
         ),
         ui.bar(total ? finished / total : 0),
+        oldFormat
+          ? ui.banner('warn', 'Lộ trình này lập bằng phiên bản cũ, một số nhiệm vụ có thể dẫn sang nhầm chương. Bấm "Lập lại" để Gia sư AI lập lộ trình mới.')
+          : null,
         stale
           ? ui.banner('warn', 'Hồ sơ năng lực đã thay đổi (vừa kiểm tra thêm chương). Bấm "Lập lại" để Gia sư AI cập nhật lộ trình.')
           : null,

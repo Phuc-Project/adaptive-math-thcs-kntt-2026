@@ -41,15 +41,12 @@
   }
 
   function katexHtml(tex, display) {
+    // Dùng chung bộ chuẩn hoá + macro với câu hỏi ngân hàng (js/core/latex.js):
+    // sửa `%`, dấu phẩy thập phân, √ △ ∥ ⊥, \overarc, chữ Việt trong công thức…
+    if (AM.latex && AM.latex.renderTex) return AM.latex.renderTex(tex, display, { output: 'html' });
     if (window.katex) {
       try {
-        return window.katex.renderToString(tex, {
-          displayMode: display,
-          throwOnError: false,
-          strict: 'ignore',
-          trust: false,
-          output: 'html',
-        });
+        return window.katex.renderToString(tex, { displayMode: display, throwOnError: false, strict: 'ignore', trust: false, output: 'html' });
       } catch (e) {
         /* rơi xuống hiển thị thô */
       }
@@ -64,30 +61,220 @@
       .replace(/`([^`]+?)`/g, '<code>$1</code>');
   }
 
+  // ---- Tách công thức ------------------------------------------------------
+
+  const MATH_ENVS = 'cases|aligned|alignedat|gathered|array|matrix|pmatrix|bmatrix|vmatrix|align\\*?|gather\\*?|equation\\*?';
+  const ENV_OPEN = new RegExp('\\\\begin\\{(' + MATH_ENVS + ')\\}', 'g');
+  const MAX_INLINE = 600;
+
+  function isEscaped(src, i) {
+    let n = 0;
+    for (let k = i - 1; k >= 0 && src[k] === '\\'; k--) n++;
+    return n % 2 === 1;
+  }
+
+  /**
+   * Chữ của AI → [{ type: 'text' | 'inline' | 'display', value }].
+   *   - $$…$$, \[…\], môi trường \begin{cases}… đứng trần → công thức khối.
+   *   - $…$, \(…\) → công thức trong dòng; `$` phải đóng trong cùng đoạn văn
+   *     (không qua dòng trống) và không quá dài, nếu không coi là kí tự `$`
+   *     thường — một dấu `$` lẻ không còn lật ngược toàn bộ phần sau thành
+   *     công thức như trước.
+   *   - \$ → kí tự `$`. Công thức chưa đóng (đang nhận luồng) giữ nguyên chữ.
+   */
+  function splitMath(src) {
+    const out = [];
+    let buf = '';
+    const flush = () => {
+      if (buf) out.push({ type: 'text', value: buf });
+      buf = '';
+    };
+    let i = 0;
+    while (i < src.length) {
+      const ch = src[i];
+      if (ch === '$' && isEscaped(src, i)) {
+        buf = buf.slice(0, -1) + '$';
+        i++;
+        continue;
+      }
+      if (src.startsWith('$$', i) || src.startsWith('\\[', i)) {
+        const close = src[i] === '$' ? '$$' : '\\]';
+        const end = src.indexOf(close, i + 2);
+        if (end !== -1 && src.slice(i + 2, end).trim()) {
+          flush();
+          out.push({ type: 'display', value: src.slice(i + 2, end) });
+          i = end + 2;
+          continue;
+        }
+        buf += src.slice(i, i + 2);
+        i += 2;
+        continue;
+      }
+      if (src.startsWith('\\(', i)) {
+        const end = src.indexOf('\\)', i + 2);
+        if (end !== -1) {
+          flush();
+          out.push({ type: 'inline', value: src.slice(i + 2, end) });
+          i = end + 2;
+          continue;
+        }
+      }
+      if (ch === '$') {
+        let end = -1;
+        for (let k = i + 1; k < src.length && k - i <= MAX_INLINE; k++) {
+          if (src[k] === '\n' && /^\n[ \t]*\n/.test(src.slice(k, k + 40))) break; // hết đoạn văn
+          if (src[k] === '$' && !isEscaped(src, k)) {
+            end = k;
+            break;
+          }
+        }
+        if (end !== -1 && src.slice(i + 1, end).trim()) {
+          flush();
+          out.push({ type: 'inline', value: src.slice(i + 1, end) });
+          i = end + 1;
+          continue;
+        }
+        buf += '$';
+        i++;
+        continue;
+      }
+      if (ch === '\\' && src.startsWith('\\begin{', i)) {
+        ENV_OPEN.lastIndex = i;
+        const m = ENV_OPEN.exec(src);
+        if (m && m.index === i) {
+          const closeTag = '\\end{' + m[1] + '}';
+          const end = src.indexOf(closeTag, i);
+          if (end !== -1) {
+            flush();
+            out.push({ type: 'display', value: src.slice(i, end + closeTag.length) });
+            i = end + closeTag.length;
+            continue;
+          }
+        }
+      }
+      buf += ch;
+      i++;
+    }
+    flush();
+    return out;
+  }
+
+  /**
+   * AI đôi khi quên dấu $: "Ta có x = \frac{3}{4} nên…". Tìm đoạn chứa lệnh
+   * LaTeX trong phần chữ thường và bọc thành công thức trong dòng. Đoạn mở rộng
+   * qua kí tự công thức (chữ Latin không dấu, số, toán tử, ngoặc, lệnh \…),
+   * dừng ở chữ tiếng Việt có dấu hoặc dấu chấm câu; ngoặc nhọn phải cân bằng.
+   */
+  const BARE_CMD =
+    /\\(?:d?t?frac|sqrt|cdot|times|div|pm|mp|leq?|geq?|neq?|approx|equiv|pi|alpha|beta|gamma|Delta|widehat|hat|angle|triangle|parallel|perp|backsim|sim|in|notin|subset|subseteq|cup|cap|infty|Rightarrow|Leftrightarrow|iff|overline|overrightarrow|vec|circ|degree|mathbb|left|right|vdots|cdots|ldots|sin|cos|tan|cot|varnothing|emptyset|mid|text|overset|underbrace)(?![A-Za-z])/;
+  const RUN_CH = /[A-Za-z0-9{}^_()[\]+\-*/=<>|.,'\\ !:;]/;
+
+  function wrapBareTex(text) {
+    if (!BARE_CMD.test(text)) return [{ type: 'text', value: text }];
+    const out = [];
+    let rest = text;
+    let guard = 0;
+    while (rest && guard++ < 20) {
+      const m = BARE_CMD.exec(rest);
+      if (!m) break;
+      let a = m.index;
+      let b = m.index + m[0].length;
+      while (a > 0 && RUN_CH.test(rest[a - 1]) && rest[a - 1] !== '\n') a--;
+      while (b < rest.length && RUN_CH.test(rest[b]) && rest[b] !== '\n') b++;
+      // Dừng giữa một chữ tiếng Việt ("90^\circ, nên") → lùi về hết chữ trước đó.
+      if (b < rest.length && /[A-Za-zÀ-ỹĐđ]/.test(rest[b])) {
+        while (b > m.index + m[0].length && /[A-Za-z]/.test(rest[b - 1])) b--;
+      }
+      if (a > 0 && /[A-Za-zÀ-ỹĐđ]/.test(rest[a - 1])) {
+        while (a < m.index && /[A-Za-z]/.test(rest[a])) a++;
+      }
+      let piece = rest.slice(a, b);
+      // Bỏ khoảng trắng/dấu câu ở hai đầu; chữ "và", "nên"… có dấu đã chặn từ trước.
+      const lead = /^[\s.,;:!]*/.exec(piece)[0].length;
+      piece = piece.slice(lead);
+      a += lead;
+      const trail = /[\s.,;:!]*$/.exec(piece)[0].length;
+      piece = piece.slice(0, piece.length - trail);
+      b = a + piece.length;
+      const opens = (piece.match(/(^|[^\\])\{/g) || []).length;
+      const closes = (piece.match(/(^|[^\\])\}/g) || []).length;
+      if (opens !== closes || !piece) {
+        out.push({ type: 'text', value: rest.slice(0, m.index + m[0].length) });
+        rest = rest.slice(m.index + m[0].length);
+        continue;
+      }
+      if (a > 0) out.push({ type: 'text', value: rest.slice(0, a) });
+      out.push({ type: 'inline', value: piece });
+      rest = rest.slice(b);
+    }
+    if (rest) out.push({ type: 'text', value: rest });
+    return out;
+  }
+
+  // ---- Bảng Markdown ---------------------------------------------------------
+
+  const TABLE_ROW = /^\s*\|.*\|\s*$/;
+  const TABLE_SEP = /^\s*\|?(\s*:?-{2,}:?\s*\|)+\s*:?-*:?\s*\|?\s*$/;
+
+  function tableHtml(rows) {
+    const cells = (line) =>
+      line
+        .trim()
+        .replace(/^\|/, '')
+        .replace(/\|$/, '')
+        .split('|')
+        .map((c) => inline(c.trim()));
+    const body = rows.filter((r) => !TABLE_SEP.test(r));
+    if (!body.length) return '';
+    const hasHead = rows.length > 1 && TABLE_SEP.test(rows[1]);
+    let html = '<div class="tutor-table-wrap"><table class="tutor-table">';
+    body.forEach(function (r, i) {
+      const tag = hasHead && i === 0 ? 'th' : 'td';
+      html += '<tr>' + cells(r).map((c) => '<' + tag + '>' + c + '</' + tag + '>').join('') + '</tr>';
+    });
+    return html + '</table></div>';
+  }
+
   function renderRichHtml(text) {
     const maths = [];
-    let s = String(text || '')
-      .replace(/\\\[([\s\S]+?)\\\]/g, (_m, t) => '$$' + t + '$$')
-      .replace(/\\\(([\s\S]+?)\\\)/g, (_m, t) => '$' + t + '$');
-    s = s.replace(/\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g, function (_m, disp, inl) {
-      maths.push(
-        disp !== undefined
-          ? '<span class="tutor-math">' + katexHtml(disp.trim(), true) + '</span>'
-          : katexHtml(inl.trim(), false),
-      );
+    const keep = (html) => {
+      maths.push(html);
       return '' + (maths.length - 1) + '';
-    });
+    };
+    const segs = [];
+    for (const seg of splitMath(String(text || ''))) {
+      if (seg.type === 'text') segs.push.apply(segs, wrapBareTex(seg.value));
+      else segs.push(seg);
+    }
+    let s = segs
+      .map(function (seg) {
+        if (seg.type === 'text') return seg.value;
+        if (seg.type === 'display') return keep('<span class="tutor-math">' + katexHtml(seg.value.trim(), true) + '</span>');
+        return keep(katexHtml(seg.value.trim(), false));
+      })
+      .join('');
     s = esc(s);
 
     const out = [];
     let list = null; // 'ul' | 'ol'
+    let table = null; // các dòng bảng đang gom
     const closeList = () => {
       if (list) out.push('</' + list + '>');
       list = null;
     };
+    const closeTable = () => {
+      if (table) out.push(tableHtml(table));
+      table = null;
+    };
     for (const rawLine of s.split('\n')) {
       const line = rawLine.trimEnd();
       let m;
+      if (TABLE_ROW.test(line)) {
+        closeList();
+        (table = table || []).push(line);
+        continue;
+      }
+      closeTable();
       if (!line.trim()) {
         closeList();
         continue;
@@ -124,6 +311,7 @@
         out.push('<p>' + inline(line) + '</p>');
       }
     }
+    closeTable();
     closeList();
     return out.join('').replace(/(\d+)/g, (_m, i) => maths[Number(i)] || '');
   }
@@ -844,6 +1032,7 @@
             context: {
               grade: grade,
               topic: topic ? topic.chapterTitle + ' — ' + topic.title : null,
+              topicId: topic ? topic.id : null,
               mastery: mastery && mastery.source !== 'default' ? mastery.value : null,
             },
           }),

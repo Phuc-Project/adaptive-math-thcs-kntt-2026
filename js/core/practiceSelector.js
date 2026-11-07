@@ -60,11 +60,21 @@
     const rng = U.mulberry32(sessionSeed);
     const usedSet = new Set(learner.usedQuestionIds);
 
-    // --- Warm-up: recognition items from topics already mastered ---
+    // --- Warm-up: recognition items from mastered topics OF THE SAME CHAPTER ---
+    // Học sinh chọn luyện một chương thì mọi câu trong buổi phải thuộc chương đó;
+    // trước đây câu khởi động lấy từ bất kì chủ đề đã thành thạo nào nên buổi
+    // "Tam giác" có thể mở đầu bằng câu chương khác. Không có chủ đề thành thạo
+    // cùng chương → không có câu khởi động (practice.js bù vào phần luyện tập).
+    const target = AM.topics ? AM.topics.getTopicById(topicId) : null;
+    const sameChapter = function (id) {
+      const t = AM.topics ? AM.topics.getTopicById(id) : null;
+      return !!(t && target && t.grade === target.grade && t.chapter === target.chapter);
+    };
     const warmupPool = pool.filter(
       (q) =>
         masteredTopicIds.indexOf(q.topicId) !== -1 &&
         q.topicId !== topicId &&
+        sameChapter(q.topicId) &&
         (q.level === 'N' || q.level === 'unknown'),
     );
     const warmup = pickN(warmupPool, want.warmup, usedSet, rng);

@@ -63,6 +63,7 @@
       context: {
         grade: topic ? topic.grade : null,
         topic: topic ? topic.chapterTitle + ' — ' + topic.title : null,
+        topicId: topic ? topic.id : null,
         level: q.level,
         kind: 'Trắc nghiệm luyện tập',
         questionText: questionAsText(q),
@@ -472,7 +473,9 @@
           'p',
           { class: 'muted-sm' },
           item.phase === 'warmup'
-            ? 'Khởi động từ chủ đề bạn đã thành thạo — không tính vào mức độ của bài này.'
+            ? 'Khởi động từ chủ đề cùng chương bạn đã thành thạo (' +
+                ((AM.topics.getTopicById(question.topicId) || {}).title || '') +
+                ') — không tính vào mức độ của bài này.'
             : topic.chapterTitle + ' · ' + topic.title,
         ),
         ui.questionCard(question, { answer: rt.answer, reveal: rt.reveal }, handleAnswerChange),

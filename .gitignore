@@ -38,3 +38,6 @@ data/pdf/
 # Ảnh chụp do kiểm thử tự sinh
 tools/kiem-thu/anh-chup/
 tools/kiem-thu/node_modules/
+
+# Kết quả chấm Gia sư AI (tools/kiem-thu/eval-tutor.mjs)
+tools/kiem-thu/ket-qua-eval/

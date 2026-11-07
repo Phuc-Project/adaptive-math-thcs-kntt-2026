@@ -141,6 +141,13 @@
     return list.filter(Boolean);
   }
 
+  /** Kiến thức SGK của chủ đề (js/core/tutorKnowledge.js) — giống máy chủ tự tra. */
+  function knowledgeFor(context) {
+    const K = window.AM_TUTOR_KNOWLEDGE;
+    const id = context && context.topicId;
+    return K && id ? K.forTopic(id) : '';
+  }
+
   /** Chế độ thử: tự lấy ảnh đề rồi gọi thẳng Gemini. */
   async function askDirect(req, key, onDelta, signal) {
     const mode = P.MODES[req.mode] ? req.mode : 'ask';
@@ -153,6 +160,7 @@
       refImages: refImages,
       solImages: solImages,
       uploads: req.images || [],
+      knowledge: knowledgeFor(req.context),
     });
     const { res, model } = await geminiDirect(body, key, 'stream', signal);
     let full = '';
@@ -347,6 +355,7 @@
         id: t.id,
         title: t.title,
         chapter: t.chapter,
+        chapterTitle: t.chapterTitle,
         mastery: Math.round(mastery * 100) / 100,
         tested: !!(km && km.tested),
         practiced: !!(bkt && bkt.totalAttempts > 0),

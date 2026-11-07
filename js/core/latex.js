@@ -34,7 +34,101 @@
     '\\Z': '\\mathbb{Z}',
     '\\N': '\\mathbb{N}',
     '\\C': '\\mathbb{C}',
+    // Cung tròn (lớp 9): KaTeX không có \overarc/\overparen/\wideparen.
+    '\\overarc': '\\overset{\\frown}{#1}',
+    '\\overparen': '\\overset{\\frown}{#1}',
+    '\\wideparen': '\\overset{\\frown}{#1}',
+    '\\widearc': '\\overset{\\frown}{#1}',
+    '\\cung': '\\overset{\\frown}{#1}',
+    // Chia hết / không chia hết theo cách viết SGK Việt Nam.
+    '\\chiahet': '\\mathrel{\\vdots}',
+    '\\khongchiahet': '\\mathrel{\\not\\vdots}',
+    '\\dongdang': '\\backsim',
   };
+
+  // -------------------------------------------------------------------------
+  // Chuẩn hoá công thức trước khi đưa KaTeX (câu hỏi ngân hàng + Gia sư AI)
+  // -------------------------------------------------------------------------
+
+  /** Ký hiệu Unicode KaTeX không nhận (hoặc thiếu font) → lệnh LaTeX tương đương. */
+  const UNICODE_TEX = {
+    '△': '\\triangle ',
+    '∆': '\\Delta ',
+    '∥': '\\parallel ',
+    '⫽': '\\parallel ',
+    '⊥': '\\perp ',
+    '∅': '\\varnothing ',
+    '½': '\\tfrac{1}{2}',
+    '¼': '\\tfrac{1}{4}',
+    '¾': '\\tfrac{3}{4}',
+    '⅓': '\\tfrac{1}{3}',
+    '⅔': '\\tfrac{2}{3}',
+    '⌒': '\\frown ',
+    '∡': '\\measuredangle ',
+    '∽': '\\backsim ',
+    ' ': ' ',
+    ' ': ' ',
+  };
+  const UNICODE_RE = new RegExp('[' + Object.keys(UNICODE_TEX).join('') + ']', 'g');
+
+  /**
+   * Dấu phẩy thập phân kiểu Việt Nam: trong KaTeX "2,5" là dấu câu nên bị chèn
+   * khoảng trắng thành "2, 5". Chỉ đổi khi chắc là số thập phân:
+   *   12,5 · 19,7-1,6 · S=…=12,5        → 12{,}5
+   * Giữ nguyên khi là liệt kê:
+   *   3,4,5 (≥ 2 dấu phẩy) · 0,1,\ldots · ƯCLN(24,36) · (2,5) · \{1,2\}
+   */
+  function fixDecimalComma(tex) {
+    return tex.replace(/\d+(?:,\d+)+/g, function (run, at, src) {
+      if (run.split(',').length > 2) return run;
+      let b = at - 1;
+      while (b >= 0 && src[b] === ' ') b--;
+      let a = at + run.length;
+      while (a < src.length && src[a] === ' ') a++;
+      const before = b >= 0 ? src[b] : '';
+      const after = src[a] || '';
+      if (before === ',' || after === ',') return run; // nằm trong dãy liệt kê
+      const opens = before === '(' || before === '[' || before === '{';
+      const closes = after === ')' || after === ']' || after === '}' || src.slice(a, a + 2) === '\\}';
+      if (opens && closes) return run; // cặp số trong ngoặc: ƯCLN(24,36), (2,5)
+      if (src.slice(Math.max(0, b - 1), b + 1) === '\\{') return run;
+      return run.replace(',', '{,}');
+    });
+  }
+
+  /**
+   * Sửa những lỗi hay gặp trong công thức (nhất là chữ do AI sinh):
+   *   - `%` không thoát → KaTeX coi là chú thích và nuốt hết phần sau.
+   *   - √2, √(x+1), △, ∥, ⊥, ∅, ½ … → lệnh LaTeX.
+   *   - \label, \tag (chỉ dùng được ở khối riêng), \displaystyle thừa không hại → giữ.
+   *   - dấu phẩy thập phân.
+   */
+  function normalizeTex(tex, displayMode) {
+    let t = String(tex == null ? '' : tex);
+    t = t.replace(/\\?%/g, function (m) {
+      return m === '%' ? '\\%' : m;
+    });
+    t = t
+      .replace(/√\s*\(([^()]*)\)/g, '\\sqrt{$1}')
+      .replace(/√\s*\{/g, '\\sqrt{')
+      .replace(/√\s*([0-9]+(?:[.,][0-9]+)?|[A-Za-z])/g, '\\sqrt{$1}')
+      .replace(/√/g, '\\surd ');
+    t = t.replace(UNICODE_RE, function (c) {
+      return UNICODE_TEX[c];
+    });
+    // align/gather/equation (của LaTeX đầy đủ) → aligned/gathered: không đánh số (1), (2).
+    t = t
+      .replace(/\\(begin|end)\{align\*?\}/g, '\\$1{aligned}')
+      .replace(/\\(begin|end)\{gather\*?\}/g, '\\$1{gathered}')
+      .replace(/\\(?:begin|end)\{equation\*?\}/g, '');
+    t = t.replace(/\\label\s*\{[^{}]*\}/g, '');
+    if (!displayMode) t = t.replace(/\\tag\*?\s*\{[^{}]*\}/g, '');
+    t = fixDecimalComma(t);
+    return t.trim();
+  }
+
+  /** Môi trường chỉ dùng được ở chế độ khối (align, gather, equation…). */
+  const DISPLAY_ONLY_ENV = /\\begin\{(?:align|alignat|gather|equation|multline|flalign)\*?\}/;
 
   // -------------------------------------------------------------------------
   // Vietnamese words inside math mode
@@ -95,24 +189,46 @@
   // Math compilation
   // -------------------------------------------------------------------------
 
-  function renderMath(tex, displayMode) {
-    const safeTex = wrapVietnameseInMath(tex);
+  function katexOnce(tex, displayMode, output, throwOnError) {
+    return window.katex.renderToString(tex, {
+      displayMode: displayMode,
+      throwOnError: throwOnError,
+      strict: 'ignore',
+      macros: Object.assign({}, KATEX_MACROS),
+      trust: false,
+      output: output,
+      errorColor: '#dc2626',
+    });
+  }
+
+  /**
+   * Công thức → HTML. Thử lần lượt: bản đã chuẩn hoá → (nếu là môi trường chỉ
+   * dùng ở khối) chế độ khối → hiển thị thô dạng code, không để chữ đỏ của
+   * KaTeX hay công thức vỡ giữa câu.
+   *
+   * opts.output: 'htmlAndMathml' (mặc định, có MathML cho trình đọc màn hình) | 'html'.
+   */
+  function renderTex(tex, displayMode, opts) {
+    const output = (opts && opts.output) || 'htmlAndMathml';
+    const raw = String(tex == null ? '' : tex);
     if (!hasKatex()) {
-      return '<code class="tex-error">' + escapeHtml(tex) + '</code>';
+      return '<code class="tex-error">' + escapeHtml(displayMode ? '$$' + raw + '$$' : '$' + raw + '$') + '</code>';
     }
-    try {
-      return window.katex.renderToString(safeTex, {
-        displayMode: displayMode,
-        throwOnError: false,
-        strict: 'ignore',
-        macros: Object.assign({}, KATEX_MACROS),
-        trust: false,
-        output: 'htmlAndMathml',
-        errorColor: '#dc2626',
-      });
-    } catch (err) {
-      return '<code class="tex-error">' + escapeHtml(tex) + '</code>';
+    const safeTex = wrapVietnameseInMath(normalizeTex(raw, displayMode));
+    const tries = [[safeTex, displayMode]];
+    if (!displayMode && DISPLAY_ONLY_ENV.test(safeTex)) tries.unshift([safeTex, true]);
+    for (const t of tries) {
+      try {
+        return katexOnce(t[0], t[1], output, true);
+      } catch (err) {
+        /* thử cách kế tiếp */
+      }
     }
+    return '<code class="tex-error">' + escapeHtml(raw) + '</code>';
+  }
+
+  function renderMath(tex, displayMode) {
+    return renderTex(tex, displayMode);
   }
 
   // -------------------------------------------------------------------------
@@ -401,5 +517,8 @@
     truncate: truncate,
     hasKatex: hasKatex,
     KATEX_MACROS: KATEX_MACROS,
+    normalizeTex: normalizeTex,
+    fixDecimalComma: fixDecimalComma,
+    renderTex: renderTex,
   };
 })(window.AM);
