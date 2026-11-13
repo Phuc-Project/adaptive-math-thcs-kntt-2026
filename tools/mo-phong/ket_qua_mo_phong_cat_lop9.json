@@ -1,0 +1,55 @@
+{
+  "grade": 9,
+  "N": 200,
+  "seed": 20261026,
+  "chapters": 10,
+  "questions": 384,
+  "runAt": "2026-10-26T11:07:14.132Z",
+  "summary": [
+    {
+      "trueTheta": -2,
+      "meanTotalItems": 93.215,
+      "meanItemsPerChapter": 9.321500000000002,
+      "meanTheta": -1.954423019258276,
+      "rmse": 0.3485676596884303,
+      "meanSE": 0.3561993847676248,
+      "rmseAfterFirstChapter": 0.789310579175796
+    },
+    {
+      "trueTheta": -1,
+      "meanTotalItems": 108.42,
+      "meanItemsPerChapter": 10.841999999999999,
+      "meanTheta": -0.9805709643914775,
+      "rmse": 0.2592073290472853,
+      "meanSE": 0.26724785085112823,
+      "rmseAfterFirstChapter": 0.741108643076564
+    },
+    {
+      "trueTheta": 0,
+      "meanTotalItems": 117.055,
+      "meanItemsPerChapter": 11.705500000000004,
+      "meanTheta": -0.01190641116765214,
+      "rmse": 0.24957447474606012,
+      "meanSE": 0.2421008495894792,
+      "rmseAfterFirstChapter": 0.637408761276852
+    },
+    {
+      "trueTheta": 1,
+      "meanTotalItems": 113.66,
+      "meanItemsPerChapter": 11.365999999999996,
+      "meanTheta": 1.013923264020414,
+      "rmse": 0.25255183210811244,
+      "meanSE": 0.24550743881604578,
+      "rmseAfterFirstChapter": 0.7695875159936229
+    },
+    {
+      "trueTheta": 2,
+      "meanTotalItems": 105.425,
+      "meanItemsPerChapter": 10.542499999999995,
+      "meanTheta": 2.0488033588436014,
+      "rmse": 0.30250521613826703,
+      "meanSE": 0.30139509081047233,
+      "rmseAfterFirstChapter": 0.6558180400238779
+    }
+  ]
+}

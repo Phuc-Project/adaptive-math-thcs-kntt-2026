@@ -203,48 +203,89 @@ Vì sao bắt buộc: tên file không kèm mã băm nội dung (dự án không
 ```
 .
 ├── index.html               # Trang duy nhất — nạp toàn bộ script theo thứ tự
-├── _selftest.html           # 95 phép tự kiểm tra logic — mở /_selftest.html
-├── _fonttest.html           # 17 phép kiểm tra phông chữ — mở /_fonttest.html
-├── _authtest.html           # 14 phép kiểm đăng ký & vai trò — mở /_authtest.html
-├── _headers                 # Cấu hình HTTP cho Cloudflare Pages
-├── firestore.rules          # Phân quyền — DÁN VÀO FIREBASE CONSOLE
-├── firebase.json            # Chỉ để deploy rules bằng CLI (site chạy ở Cloudflare)
-├── css/app.css              # Toàn bộ giao diện
-├── data/questions.js        # 6 205 câu hỏi + lý thuyết 39 bài (~9 MB)
-├── data/exercises.js        # 3 633 bài tập tự luyện lớp 6–9 (siêu dữ liệu, ~1,2 MB)
-├── data/exercises/img/      # ảnh đề + hướng dẫn giải đã cắt (.webp, ~4 200 file)
-├── tools/import-exercises/  # script tách bài tập từ PDF → xem README trong thư mục
-├── docs/design/             # Tài liệu thiết kế (tham khảo cho báo cáo đề án)
-├── tools/reset-accounts.js  # Xoá sạch tài khoản + dữ liệu (Firebase Admin SDK)
-└── js/
-    ├── core/                # Logic thuần — không đụng tới DOM
-    │   ├── util.js          # Helper DOM, ngày tháng, RNG có seed
-    │   ├── constants.js     # CAT_CONFIG, mastery band, XP, huy hiệu…
-    │   ├── topics.js        # 92 chủ đề Toán THCS lớp 6, 7, 8, 9
-    │   ├── store.js         # localStorage + mốc thời gian cho đồng bộ
-    │   ├── firebaseClient.js# Khởi tạo Firebase, dịch mã lỗi sang tiếng Việt
-    │   ├── auth.js          # Đăng ký / đăng nhập / đăng xuất / vai trò
-    │   ├── sync.js          # Kéo–đẩy 4 khối dữ liệu lên Firestore
-    │   ├── classroom.js     # Lớp học: tạo lớp, mã tham gia, roster, hỗ trợ
-    │   ├── questionBank.js  # Truy cập ngân hàng câu hỏi
-    │   ├── exerciseBank.js  # Ngân hàng bài tập tự luyện + bộ gợi ý cá nhân hóa
-    │   ├── latex.js         # Render LaTeX + bảng, qua KaTeX
-    │   ├── irt.js           # IRT 3PL, ước lượng θ bằng MAP
-    │   ├── cat.js           # Bộ chọn câu hỏi theo thang N→H→V→T
-    │   ├── bkt.js           # Bayesian Knowledge Tracing
-    │   ├── srs.js           # Lặp lại ngắt quãng SM-2
-    │   ├── adaptiveEngine.js# Phát hiện frustration / boredom / flow
-    │   ├── profiling.js     # Dựng hồ sơ năng lực
-    │   ├── treeStability.js # Cây tri thức + độ vững
-    │   ├── practiceSelector.js
-    │   ├── pathGenerator.js # Sinh lộ trình theo ngày/tuần
-    │   └── todayActivities.js
-    ├── components.js        # Khung trang, chip người dùng, render câu hỏi
-    ├── views/               # 13 trang (landing, login, admin, teacher,
-    │                        #   classroom + 8 trang học)
-    ├── router.js            # Router theo hash + chặn route theo vai trò
-    ├── boot-guard.js        # Bắt lỗi khởi động và hiện màn hình chẩn đoán
-    └── app.js               # Điểm khởi động
+├── _headers                 # Cấu hình HTTP & bảo mật cho Cloudflare Pages
+├── vercel.json              # Cấu hình Vercel Edge & cache headers
+├── firestore.rules          # Phân quyền Firestore — DÁN VÀO FIREBASE CONSOLE
+├── firebase.json            # Cấu hình Firestore rules & Auth cho Firebase CLI
+├── css/app.css              # Toàn bộ giao diện "Bảng xanh & Vở ô li"
+│
+├── js/
+│   ├── app.js               # Điểm khởi chạy & đăng ký các route
+│   ├── boot-guard.js        # Bắt lỗi khởi động và hiện màn hình chẩn đoán
+│   ├── components.js        # Khung trang, modal, render câu hỏi dùng chung
+│   ├── router.js            # Router theo hash + chặn route theo vai trò
+│   ├── core/                # 23 module logic thuần (thuật toán, auth, store, sync)
+│   │   ├── util.js          # Helper DOM, ngày tháng, RNG có seed
+│   │   ├── constants.js     # CAT_CONFIG, mastery band, XP, độ dài buổi học...
+│   │   ├── topics.js        # 92 chủ đề Toán THCS lớp 6, 7, 8, 9
+│   │   ├── store.js         # localStorage + mốc thời gian cho đồng bộ
+│   │   ├── firebaseClient.js# Khởi tạo Firebase, dịch mã lỗi sang tiếng Việt
+│   │   ├── auth.js          # Đăng ký / đăng nhập / đăng xuất / vai trò
+│   │   ├── sync.js          # Kéo–đẩy 4 khối dữ liệu lên Firestore
+│   │   ├── classroom.js     # Lớp học: tạo lớp, mã tham gia, roster, hỗ trợ
+│   │   ├── questionBank.js  # Truy cập ngân hàng 1.472 câu hỏi trắc nghiệm
+│   │   ├── exerciseBank.js  # Ngân hàng 3.633 bài tập tự luyện + gợi ý cá nhân hóa
+│   │   ├── tutorKnowledge.js# Tri thức phương pháp giải Toán THCS cho Gia sư AI
+│   │   ├── tutorPrompt.js   # Prompt sư phạm Gia sư AI (dùng chung cho server & client)
+│   │   ├── tutor.js         # Client Gia sư AI: gọi /api/tutor, đọc luồng SSE
+│   │   ├── latex.js         # Render LaTeX + bảng, qua KaTeX
+│   │   ├── irt.js           # IRT 3PL, ước lượng θ bằng MAP
+│   │   ├── cat.js           # Bộ chọn câu hỏi thích ứng thang N→H→V→T
+│   │   ├── bkt.js           # Bayesian Knowledge Tracing
+│   │   ├── srs.js           # Lặp lại ngắt quãng SM-2
+│   │   ├── adaptiveEngine.js# Phát hiện trạng thái học tập (Flow / Boredom / Frustration)
+│   │   ├── profiling.js     # Dựng và phân tích hồ sơ năng lực
+│   │   ├── treeStability.js # Cây tri thức + độ vững
+│   │   ├── practiceSelector.js # Bộ chọn câu luyện tập theo hồ sơ năng lực
+│   │   ├── pathGenerator.js # Sinh lộ trình học theo ngày/tuần
+│   │   └── todayActivities.js # Sinh nhiệm vụ "Hôm nay cần làm"
+│   └── views/               # Các màn hình giao diện người dùng
+│       ├── home.js          # Trang chủ học sinh
+│       ├── landing.js       # Trang giới thiệu / chào mừng
+│       ├── login.js         # Đăng nhập / đăng ký
+│       ├── trial.js         # Bài học dùng thử Hằng đẳng thức (#/thu)
+│       ├── onboarding.js    # Khảo sát ban đầu
+│       ├── diagnostic.js    # Bài kiểm tra đầu vào thích ứng (CAT)
+│       ├── profile.js       # Hồ sơ năng lực & cây tri thức
+│       ├── learningPath.js  # Lộ trình học cá nhân hóa
+│       ├── practice.js      # Phiên luyện tập thích ứng
+│       ├── theory.js        # Lý thuyết 92 chủ đề
+│       ├── exercises.js     # Kho bài tập cá nhân hóa
+│       ├── tutor.js         # Gia sư AI tương tác (bàn làm việc mới)
+│       ├── aiRoadmap.js     # Kế hoạch học tập do AI lập
+│       ├── errors.js        # Sổ tay lỗi sai & phân tích nguyên nhân
+│       ├── classroom.js     # Lớp học phía học sinh
+│       ├── teacher.js       # Bảng điều khiển giáo viên
+│       └── admin.js         # Quản trị hệ thống
+│
+├── data/                    # Dữ liệu phục vụ trực tiếp cho Web App
+│   ├── questions.js         # 1.472 câu hỏi trắc nghiệm CAT + lý thuyết 92 chủ đề
+│   ├── exercises.js         # 3.633 bài tập tự luyện THCS 6–9
+│   ├── featured-hdt.js      # Dữ liệu bài học trọng điểm Hằng đẳng thức đáng nhớ
+│   └── exercises/img/       # Ảnh minh họa bài tập & lời giải (.webp)
+│
+├── api/                     # Backend Serverless Edge (Vercel)
+│   └── tutor.js             # POST /api/tutor (Vercel Edge function)
+│
+├── functions/api/           # Backend Serverless (Cloudflare Pages Functions)
+│   └── tutor.js             # Logic Gia sư AI (Gemini SDK, xác thực token RS256, SSE stream)
+│
+├── docs/                    # Hồ sơ, tài liệu & báo cáo nghiên cứu KHKT
+│   ├── bao-cao-khkt/        # Báo cáo KHKT V3 & Slide thuyết trình v2 (Mới nhất)
+│   │   ├── BAO_CAO_KHKT_ADAPTIVEMATH_2026_BAN_SUA_V3.docx
+│   │   ├── BAO_CAO_KHKT_ADAPTIVEMATH_2026_BAN_SUA_V3.md
+│   │   ├── AdaptiveMath_KHKT_2026_trinh_bay_v2.pptx
+│   │   └── img_v3/          # Hình ảnh minh họa cho báo cáo V3
+│   ├── ho-so-du-thi-2026-2027/ # Bộ hồ sơ dự thi chính thức theo mẫu Sở (Phụ lục II → IX)
+│   ├── minh-chung/          # Nhật ký nghiên cứu & ảnh minh chứng thực tế
+│   ├── design/              # Tài liệu thiết kế giao diện
+│   └── video/               # Video clip hướng dẫn sử dụng sản phẩm
+│
+└── tools/                   # Bộ công cụ kiểm thử & dữ liệu
+    ├── kiem-thu/            # Kiểm thử tự động E2E, Server, Luồng (Playwright)
+    ├── mo-phong/            # Công cụ mô phỏng CAT và kết quả 4 khối lớp
+    ├── import-2026/         # Script dựng ngân hàng câu hỏi
+    └── import-exercises/    # Script bóc tách bài tập từ PDF gốc
 ```
 
 ---
@@ -319,63 +360,24 @@ Ghi lại trung thực để tiện đưa vào báo cáo đề án:
 
 ---
 
-## 10. Kiểm thử
+## 10. Kiểm thử tự động
 
-Dự án có ba bộ tự kiểm tra, mở thẳng bằng trình duyệt:
+Hệ thống được kiểm thử tự động toàn diện qua Playwright (trong thư mục `tools/kiem-thu/`) với **Firebase giả lập** (port đầy đủ `firestore.rules`) và **Gemini giả lập** — không cần mạng, không tốn lượt gọi API thật:
 
-### `/_selftest.html` — 95 phép kiểm logic
+```bash
+cd tools/kiem-thu
+npm install
+npx playwright install chromium
+npm test
+```
 
-Nạp toàn bộ module rồi in kết quả PASS/FAIL:
+| Lệnh | Nội dung kiểm tra |
+|---|---|
+| `npm run may-chu` | Máy chủ Gia sư AI (bundle như Vercel Edge / Cloudflare Pages): chuyển model khi lỗi, xác thực token Firebase RS256, kiểm tra cấu hình |
+| `npm run e2e` | Đăng ký GV/HS, tạo lớp, tham gia lớp, hỏi bài, trả lời, đồng bộ tiến độ, Gia sư AI, sổ tay lỗi sai, đăng xuất |
+| `npm run luong` | Luồng học sinh thực tế: khảo sát ban đầu → CAT đầu vào → lộ trình học → luyện tập thích ứng; giáo viên giám sát thời gian thực |
 
-- 23 module và 13 trang đều đăng ký đúng, và **mọi trang đều render ra DOM thật**
-- IRT: xác suất tăng theo θ; toàn đúng đẩy θ lên, toàn sai kéo θ xuống
-- CAT: chạy trọn một phiên mô phỏng — dừng đúng lúc, **phủ đủ 20/20 chủ đề**, không lặp câu
-- Chấm điểm MCQ / Đúng-Sai (kể cả điểm từng phần)
-- Hồ sơ năng lực: mastery luôn nằm trong [0,1], gộp chương đúng
-- Cây tri thức: tổng số chủ đề theo giai đoạn khớp
-- Lộ trình: **không ngày nào vượt quỹ thời gian**, không trùng mã hoạt động
-- BKT tăng khi đúng và đạt ngưỡng thành thạo sau chuỗi đúng; SM-2 giãn khoảng ôn và reset khi trượt
-- Render LaTeX cho **200 câu hỏi thật** không văng lỗi, bảng `tabular` ra đúng HTML
-
-Trang này sao lưu `localStorage` trước khi chạy và khôi phục sau đó, nên mở lúc đang đăng nhập cũng không mất dữ liệu.
-
-### `/_fonttest.html` — 17 phép kiểm phông chữ
-
-Trang dùng **hai** font, tách theo nhiệm vụ: **Be Vietnam Pro** cho mọi thứ để đọc (đề bài, lý thuyết, nhãn, nút), **Baloo 2** chỉ cho tiêu đề và logo. Baloo 2 là font hiển thị bo tròn — đẹp ở cỡ 2rem, nhưng đọc cả đoạn dài thì mỏi mắt, và đó chính là phản hồi "chữ nhức mắt" của người dùng.
-
-Kiểm đúng những chỗ hay hỏng phông:
-
-- Cả hai font tải đủ nét (Be Vietnam Pro 400–700, Baloo 2 600–800), nét đậm nhất **thật sự khác** nét nhẹ nhất (không phải trình duyệt tự bôi đậm)
-- Hai font thực sự khác nhau — nếu trùng bề rộng nghĩa là một trong hai chưa tải
-- Chữ tiếng Việt có dấu do chính font vẽ, **không bị thay thế từng ký tự** bằng font dự phòng
-- Đúng font đúng chỗ: `body` và đề bài dùng Be Vietnam Pro, tiêu đề dùng Baloo 2
-- Biểu tượng Material Symbols **không** dính font chữ (nếu dính sẽ hiện chữ "home", "logout" thay vì icon)
-- `code` giữ monospace, ô nhập liệu dùng đúng font thân trang
-- **Công thức KaTeX giữ font toán riêng**, không bị font giao diện tràn vào
-- Giãn dòng thân trang ≥ 1,6 và đề bài ≥ 1,7 — chốt lại phần sửa "chữ nhức mắt" để một lần sửa CSS sau này không lặng lẽ làm hỏng
-
-### `/_authtest.html` — 14 phép kiểm đăng ký & vai trò
-
-Chạy `register()` trên một Firebase giả, mô phỏng đúng thời điểm từng làm hỏng nó.
-
-**Lỗi được chốt lại ở đây:** `createUserWithEmailAndPassword()` đăng nhập tài khoản mới **ngay lập tức**, nên `onAuthStateChanged` chạy trong lúc `register()` còn đang chờ `updateProfile()`. Listener chạm tới `users/{uid}` trước, không thấy document nên tự tạo một cái với `role` đoán mò là `'student'`. Đến lượt `register()` ghi `role: 'teacher'` thì đó đã thành một *update đổi vai trò* — và `firestore.rules` từ chối thẳng. **Mọi tài khoản giáo viên đều lặng lẽ ra học sinh.**
-
-Firebase giả trong test có thực thi đúng điều khoản `request.resource.data.role == resource.data.role`, nên nếu ai đó lỡ tay bỏ fix, test chuyển sang FAIL chứ không im lặng.
-
-Kiểm:
-
-- Đăng ký giáo viên ra đúng giáo viên — trong Firestore, trong bộ nhớ, và qua `isTeacher()`
-- **Không lệnh ghi nào bị rules từ chối** trong suốt quá trình đăng ký
-- Họ tên đã nhập không bị mất, dù `updateProfile()` về sau
-- Đăng ký học sinh vẫn ra học sinh, và học sinh không có quyền giáo viên
-- Client bị sửa mà khai `role: 'admin'` (hoặc rác) đều bị hạ xuống `student`
-- Đăng ký lỗi giữa chừng không để lại vai trò rớt sang tài khoản đăng ký kế tiếp
-
-**Kết quả lần chạy gần nhất: 80 + 17 + 14 PASS, 0 FAIL** (Chrome headless, phục vụ qua HTTP).
-
-Phần chưa kiểm chứng được: màn hình cảnh báo khi mở bằng `file://` — Chrome headless chặn điều hướng tới `file://` nên không dựng lại được tình huống đó.
-
-Nếu gặp lỗi khi chạy, ứng dụng sẽ tự hiện màn hình chẩn đoán liệt kê lỗi và tình trạng từng thành phần. Chi tiết hơn thì mở **DevTools → Console** (F12); mã là JavaScript thuần không qua biên dịch nên thông báo lỗi trỏ thẳng vào file và dòng thật.
+Nếu gặp lỗi khi chạy trên trình duyệt thật, ứng dụng sẽ tự hiện màn hình chẩn đoán liệt kê lỗi và tình trạng từng thành phần (`js/boot-guard.js`). Chi tiết hơn có thể mở **DevTools → Console** (F12); mã là JavaScript thuần không qua biên dịch nên thông báo lỗi trỏ thẳng vào file và dòng thật.
 
 Vài lỗi hay gặp lúc mới thiết lập:
 
@@ -424,7 +426,7 @@ Chỉ gửi số liệu học tập (mastery, bài đã làm, số lỗi), khôn
 **Đã kiểm thử** (Gemini giả lập, vì môi trường kiểm thử không ra được Internet): 21 phép kiểm cho
 Function (token sai/hết hạn/giả chữ ký → 401, luồng bị cắt giữa chừng vẫn ghép đúng, chuyển model
 khi 404, 429, bộ lọc an toàn, ảnh không hợp lệ bị loại, giới hạn tần suất) và 11 phép trong
-`_selftest.html` (escape HTML câu trả lời, LaTeX, prompt chế độ gợi ý không lộ đáp số, đọc luồng).
+`server-test.mjs` (escape HTML câu trả lời, LaTeX, prompt chế độ gợi ý không lộ đáp số, đọc luồng).
 Chưa gọi Gemini thật — cần thử lại sau khi đặt khóa.
 
 ### Tiết kiệm API của Gia sư AI

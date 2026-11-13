@@ -1,0 +1,13 @@
+BỘ HỒ SƠ THEO MẪU GỐC
+
+Đã điền: Trường TH và THCS Văn Hán; xã Văn Hán; Hoàng Thiên Vũ (9A6, trưởng nhóm); Lường Hà Giang (8A6); cô Phạm Thị Phương Nga và cô Tạ Thị Linh. Lĩnh vực theo nhật ký nguồn là Công nghệ thông tin.
+
+Đã thêm Phụ lục II dạng Excel. Ngày sinh và kết quả học tập/rèn luyện chưa có trong hồ sơ nên để trống.
+
+Phụ lục III cần xã Văn Hán điền hoạt động, thời gian, số dự án và lĩnh vực. Phụ lục VII còn thiếu ngày sinh, địa chỉ/điện thoại, ngày nghiên cứu và chữ ký.
+
+Nhật ký nghiên cứu trong dự án ghi Nguyễn Nam Phong và Phan Trang Nhung, khác với danh sách hiện tại. Phụ lục VIII giữ mốc theo nguồn và đánh dấu phần cần xác nhận; không gán việc cũ cho nhóm mới khi chưa có chứng cứ.
+
+Không tìm thấy file Markdown riêng có prompt log trong thư mục dự án. Mã phần mềm có hướng dẫn cho Gia sư Gemini; tài liệu hướng dẫn nhắc một lần thử hỏi về căn bậc hai. Không có bản chép đầy đủ câu hỏi và câu trả lời Gemini. Phụ lục IX ghi rõ điều này và kê khai việc ChatGPT hỗ trợ soạn hồ sơ ngày 24/10/2026.
+
+Báo cáo chính trong sản phẩm nêu kết quả thử nghiệm học sinh nhưng nhật ký đối chiếu không có dữ liệu gốc tương ứng. Báo cáo Phụ lục V/VI không lặp lại các số liệu đó. Bản hồ sơ chưa ký và chưa xuất PDF.

@@ -19,7 +19,7 @@ import numpy as np
 from PIL import Image, ImageOps
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-PDF = os.path.join(ROOT, 'data', 'pdf', 'Cơ bản toán 6 kì 1.pdf')
+PDF = os.path.join(os.path.dirname(__file__), 'pdf', 'Cơ bản toán 6 kì 1.pdf')
 BANK = os.path.join(ROOT, 'data', 'exercises.js')
 IMG_DIR = os.path.join(ROOT, 'data', 'exercises', 'img')
 SUB = 'g6a/de'          # ảnh câu đề: data/exercises/img/g6a/de/<mã>.webp
