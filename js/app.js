@@ -24,6 +24,7 @@
   R.register('/theory', V.theory);
   R.register('/practice', V.practice);
   R.register('/exercises', V.exercises);
+  R.register('/exams', V.exams);
   R.register('/tutor', V.tutor);
   R.register('/errors', V.errors);
 

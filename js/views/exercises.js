@@ -108,17 +108,21 @@
   // View
   // -------------------------------------------------------------------------
 
-  function view(params, ctx) {
+  function view(params, ctx, mode) {
+    // #/exams ("Kho đề thi") dùng lại view này nhưng chỉ hiện phần đề kiểm tra.
+    const examsOnly = !!(mode && mode.examsOnly);
+    const ROUTE = examsOnly ? '#/exams' : '#/exercises';
+    const TITLE = examsOnly ? 'Kho đề thi' : 'Bài tập';
     // Bài học dùng thử: chỉ hiện một chủ đề, không cần hồ sơ.
     const trial = !!(AM.trial && AM.trial.isTrial(params));
     const trialTopic = trial ? AM.topics.getTopicById(params.topic) : null;
     if (!ctx.hasProfile && !trialTopic) {
       return ui.page(
-        { title: 'Bài tập', activeRoute: '#/exercises' },
+        { title: TITLE, activeRoute: ROUTE },
         ui.empty(
           '📒',
           'Cần thiết lập hồ sơ trước',
-          'Hệ thống cần biết bạn học lớp mấy để lấy đúng kho bài tập.',
+          'Hệ thống cần biết bạn học lớp mấy để lấy đúng ' + (examsOnly ? 'kho đề thi.' : 'kho bài tập.'),
           el('a', { class: 'btn btn-primary', href: '#/onboarding' }, 'Thiết lập ngay'),
         ),
       );
@@ -825,6 +829,30 @@
       return container;
     }
 
+    if (examsOnly) {
+      const exams = extrasCard();
+      U.mount(
+        container,
+        ui.page(
+          { title: TITLE, activeRoute: ROUTE },
+          el(
+            'section',
+            { class: 'stack-sm' },
+            el('h1', { class: 'page-title' }, 'Kho đề thi ' + C.GRADE_LABELS[grade].toLowerCase()),
+            el(
+              'p',
+              { class: 'page-sub' },
+              'Đề kiểm tra giữa kì, cuối kì và ôn tập chương, giữ nguyên đề gốc. Làm ra giấy trong thời gian ' +
+                'quy định rồi tự đánh giá từng câu — kết quả được tính vào hồ sơ năng lực như bài tập thường.',
+            ),
+          ),
+          exams || ui.empty('📭', 'Chưa có đề thi', 'Kho đề thi cho ' + C.GRADE_LABELS[grade] + ' đang trống.'),
+          ui.footerNote(),
+        ),
+      );
+      return container;
+    }
+
     if (all.length === 0) {
       return ui.page(
         { title: 'Bài tập', activeRoute: '#/exercises' },
@@ -861,4 +889,7 @@
 
   AM.views = AM.views || {};
   AM.views.exercises = view;
+  AM.views.exams = function (params, ctx) {
+    return view(params, ctx, { examsOnly: true });
+  };
 })(window.AM);

@@ -88,6 +88,7 @@
     { route: '#/profile', label: 'Hồ sơ', hint: 'Chủ đề nào còn yếu', icon: 'show_chart', step: 3, tone: 'lime', group: 'Vòng học 5 bước' },
     { route: '#/learning-path', label: 'Lộ trình', hint: 'Xếp bài mỗi ngày', icon: 'route', step: 4, tone: 'lime', group: 'Vòng học 5 bước' },
     { route: '#/exercises', label: 'Luyện tập', hint: 'Có gia sư AI gợi ý', icon: 'bolt', step: 5, tone: 'violet', group: 'Vòng học 5 bước', tab: true },
+    { route: '#/exams', label: 'Kho đề thi', icon: 'quiz', group: 'Hỗ trợ trong lúc học' },
     { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy', group: 'Hỗ trợ trong lúc học', tab: true },
     { route: '#/errors', label: 'Sổ tay lỗi sai', icon: 'rule', group: 'Hỗ trợ trong lúc học' },
     { route: '#/classroom', label: 'Lớp học', icon: 'groups', group: 'Hỗ trợ trong lúc học', tab: true },
