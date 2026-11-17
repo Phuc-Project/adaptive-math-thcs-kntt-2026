@@ -17,6 +17,8 @@ npm test
 | `npm run luong` | Học sinh làm onboarding + kiểm tra đầu vào qua giao diện thật; GV thấy câu hỏi/tiến độ **realtime**; GV dùng Gia sư AI |
 | `npm run buoi-hoc` | Số câu mỗi buổi (5 / 10 / 15 / tự động theo thời gian): onboarding, lộ trình, đổi số câu ngay trong buổi luyện |
 | `npm run hoc-thu` | Bài học dùng thử **Hằng đẳng thức đáng nhớ** (`#/thu`): khách đăng ký từ trang giới thiệu → vào thẳng bài; lý thuyết, 10 câu dễ → khó, bài tập trong sách, Gia sư AI có câu gợi ý; học sinh lớp khác; giáo viên; giao diện điện thoại. Ảnh chụp lưu ở `anh-chup/dung-thu/` |
+| `npm run kho-de` | Kho đề thi (`#/exams`): học sinh lớp 8 thấy danh sách đề, lọc theo loại, mở đề (tờ đề + phiếu trả lời), đồng hồ, tô đáp án, tải lại vẫn giữ, nộp bài → chấm, đáp án; lớp 9 đề thi thử vào 10; giao diện điện thoại. Ảnh chụp ở `anh-chup/kho-de/` |
+| `npm run giao-de` | Giáo viên tải đề PDF (`fixtures/de-mau.pdf`) lên lớp: tự che tên trường, nhập đáp án; học sinh ngoài lớp không đọc được đề, trong lớp không đọc được đáp án trước khi nộp; làm bài, nộp (không sửa được), chấm; GV xem bảng điểm, cho làm lại, xóa đề. Ảnh chụp ở `anh-chup/giao-de/` |
 
 `db.js` chứa bản port của `firestore.rules` — sửa rules thì sửa cả ở đây.
 

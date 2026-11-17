@@ -49,6 +49,7 @@
     CK1: 'Đề kiểm tra cuối học kì I',
     GK2: 'Đề kiểm tra giữa học kì II',
     CK2: 'Đề kiểm tra cuối học kì II',
+    V10: 'Đề thi thử tuyển sinh vào lớp 10',
   };
 
   const LESSON_BY_ID = new Map(RAW.lessons.map((l) => [l.id, l]));

@@ -4070,3 +4070,655 @@ details.debug pre {
     display: none;
   }
 }
+
+/* ==========================================================================
+   Kho đề thi (#/exams) — tệp đề + trình xem đề kiểu Azota
+   ========================================================================== */
+
+.xm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.xm-tabs .ex-chip {
+  text-decoration: none;
+}
+
+.xm-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+}
+
+.xm-file {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--sheet);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.xm-file:hover {
+  border-color: var(--board);
+  box-shadow: var(--shadow-pop);
+}
+
+.xm-file-icon {
+  flex: none;
+  width: 3.4rem;
+  height: 4.2rem;
+  border-radius: 6px 14px 6px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  background: var(--red-wash);
+  color: var(--red-pen);
+  border: 1px solid #f1c9c4;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.1;
+}
+
+.xm-file-icon .material-symbols-outlined {
+  font-size: 1.6rem;
+}
+
+.xm-type-gk1,
+.xm-type-gk2 {
+  background: var(--blue-wash);
+  color: var(--blue-ink);
+  border-color: #c9d7f0;
+}
+
+.xm-type-v10 {
+  background: var(--yellow-wash);
+  color: #7a5a00;
+  border-color: #f0dc9a;
+}
+
+.xm-file-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  align-items: flex-start;
+}
+
+.xm-file-title {
+  font-weight: 800;
+  color: var(--ink-strong);
+}
+
+.xm-file-src {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.xm-file-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.8rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.xm-file-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.xm-file-meta .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.xm-has-key {
+  color: var(--emerald);
+  font-weight: 700;
+}
+
+.xm-file-open {
+  flex: none;
+  align-self: center;
+}
+
+/* ---- Trang làm đề ---- */
+
+.xm-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.xm-split {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .xm-split {
+    grid-template-columns: minmax(0, 1fr) 19rem;
+  }
+  .xm-sheet {
+    position: sticky;
+    top: 4.6rem;
+    max-height: calc(100vh - 5.6rem);
+    overflow-y: auto;
+  }
+}
+
+.xm-viewer {
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-lg);
+  background: #525659; /* nền xám như trình xem PDF */
+  overflow: hidden;
+}
+
+.xm-viewer-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  background: #323639;
+  color: #f1f3f4;
+  font-size: 0.85rem;
+}
+
+.xm-viewer-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xm-ibtn {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.xm-ibtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.xm-zoom {
+  min-width: 3rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.xm-viewer-scroll {
+  overflow: auto;
+  padding: 1rem 0.6rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: safe center;
+  gap: 1rem;
+}
+
+.xm-paper {
+  --zoom: 1;
+  background: #fff;
+  width: max-content;
+  min-width: min(100%, calc(640px * var(--zoom)));
+  max-width: none;
+  padding: calc(2.2rem * var(--zoom)) calc(2rem * var(--zoom));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  color: #111;
+  font-family: 'Times New Roman', Times, serif;
+}
+
+.xm-paper img {
+  display: block;
+  max-width: none;
+  height: auto;
+}
+
+.xm-paper-head {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: calc(0.95rem * var(--zoom));
+  line-height: 1.45;
+}
+
+.xm-paper-head h2 {
+  font-size: calc(1.15rem * var(--zoom));
+  font-weight: 700;
+  margin: 0.2rem 0;
+  letter-spacing: 0;
+}
+
+.xm-paper-src {
+  font-style: italic;
+  color: #444;
+}
+
+.xm-paper-no {
+  display: inline-block;
+  margin-top: 0.4rem;
+  padding: 0.05rem 0.7rem;
+  border: 1px solid #111;
+  font-weight: 700;
+}
+
+.xm-part-title {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: calc(1rem * var(--zoom));
+  font-weight: 700;
+  margin: 0.9rem 0 0.4rem;
+}
+
+.xm-q {
+  position: relative;
+  padding: 0.15rem 0.3rem;
+  margin: 0 -0.3rem;
+  border-radius: 4px;
+  scroll-margin: 6rem;
+}
+
+.xm-q.is-right {
+  box-shadow: inset 3px 0 0 var(--emerald);
+}
+
+.xm-q.is-wrong {
+  box-shadow: inset 3px 0 0 var(--red-pen);
+}
+
+.xm-q.is-flash {
+  animation: xm-flash 1.2s ease;
+}
+
+@keyframes xm-flash {
+  0%,
+  40% {
+    background: var(--yellow-wash);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
+.xm-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.15rem 0 0.4rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.xm-mark .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.xm-mark.is-right {
+  background: #e3f3eb;
+  color: var(--emerald);
+}
+
+.xm-mark.is-wrong {
+  background: var(--red-wash);
+  color: var(--red-pen);
+}
+
+.xm-mark.is-none {
+  background: #eef1f4;
+  color: var(--muted);
+}
+
+.xm-paper-end {
+  text-align: center;
+  font-weight: 700;
+  margin-top: 1.2rem;
+}
+
+/* ---- Phiếu trả lời ---- */
+
+.xm-sheet {
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-lg);
+  background: var(--sheet);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.xm-sheet-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 800;
+  color: var(--board);
+}
+
+.xm-clock-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.7rem;
+  border-radius: var(--radius-md);
+  background: var(--board-soft);
+}
+
+.xm-clock {
+  font-size: 2rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--board);
+  line-height: 1;
+}
+
+.xm-clock.is-low {
+  color: var(--red-pen);
+}
+
+.xm-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--board);
+  font-size: 0.9rem;
+}
+
+.xm-score {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: var(--red-pen);
+  line-height: 1;
+}
+
+.xm-score small {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-left: 0.25rem;
+}
+
+.xm-sheet-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 700;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.3rem;
+}
+
+.xm-bubbles {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.xm-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.xm-qno {
+  width: 2rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: right;
+  cursor: pointer;
+}
+
+.xm-qno:hover {
+  color: var(--board);
+  text-decoration: underline;
+}
+
+.xm-bubble {
+  width: 2.05rem;
+  height: 2.05rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--rule-strong);
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.xm-bubble:hover:not(:disabled) {
+  border-color: var(--board);
+}
+
+.xm-bubble.is-on {
+  background: var(--board);
+  border-color: var(--board);
+  color: #fff;
+}
+
+.xm-bubble:disabled {
+  cursor: default;
+}
+
+.xm-bubble.is-key {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: #fff;
+}
+
+.xm-bubble.is-wrong {
+  background: var(--red-pen);
+  border-color: var(--red-pen);
+  color: #fff;
+}
+
+.xm-tl-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.xm-tl-name {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0;
+}
+
+.xm-tl-name:hover {
+  color: var(--board);
+  text-decoration: underline;
+}
+
+.xm-tl-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--rule-strong);
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.xm-tl-btn.is-ok {
+  background: var(--emerald);
+  border-color: var(--emerald);
+  color: #fff;
+}
+
+.xm-tl-btn.is-no {
+  background: var(--red-pen);
+  border-color: var(--red-pen);
+  color: #fff;
+}
+
+.xm-tl-btn:disabled {
+  cursor: default;
+}
+
+@media (max-width: 760px) {
+  /* Màn hẹp: tờ đề co vừa khung (phóng to bằng hai ngón tay). */
+  .xm-paper {
+    width: 100%;
+    min-width: 0;
+  }
+  .xm-paper img {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .xm-file-open {
+    display: none;
+  }
+  .xm-viewer-scroll {
+    padding: 0.5rem 0.25rem 1rem;
+  }
+  .xm-paper {
+    padding: 1.2rem 0.8rem;
+  }
+}
+
+/* In / lưu PDF: chỉ in tờ đề (và đáp án nếu đã mở). */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .xm-viewer-scroll,
+  .xm-viewer-scroll * {
+    visibility: visible;
+  }
+  .xm-viewer-scroll {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    padding: 0;
+    overflow: visible;
+  }
+  .xm-paper {
+    box-shadow: none;
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+  }
+  .xm-paper-sol {
+    break-before: page;
+  }
+  .xm-mark {
+    display: none;
+  }
+}
+
+/* ---- Đề giáo viên giao: trang đề dạng ảnh, form tải lên ---- */
+
+.xm-paper.is-pages {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  gap: calc(0.8rem * var(--zoom));
+}
+
+.xm-page {
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.xm-form-grid {
+  display: grid;
+  gap: 0.7rem 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+}
+
+.xm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.xm-field-label {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--ink-strong);
+}
+
+.xm-cover-tools {
+  flex-wrap: wrap;
+  gap: 0.5rem 1.2rem;
+  font-size: 0.88rem;
+}
+
+.xm-thumbs {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding: 0.6rem;
+  background: #525659;
+  border-radius: var(--radius-md);
+}
+
+.xm-thumbs figure {
+  margin: 0;
+  flex: none;
+  text-align: center;
+}
+
+.xm-thumbs figcaption {
+  color: #e8eaed;
+  margin-top: 0.25rem;
+}
+
+.xm-thumb {
+  display: block;
+  width: 11rem;
+  height: auto;
+  background: #fff;
+}
+
+.xm-file.is-class {
+  border-color: var(--board);
+  box-shadow: inset 4px 0 0 var(--chalk-yellow);
+}
+
+@media (max-width: 760px) {
+  .xm-paper.is-pages {
+    padding: 0;
+  }
+}

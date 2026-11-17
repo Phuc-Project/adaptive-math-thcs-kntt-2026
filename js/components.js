@@ -96,6 +96,7 @@
 
   const TEACHER_NAV = [
     { route: '#/teacher', label: 'Lớp của tôi', icon: 'groups', tab: true },
+    { route: '#/exams', label: 'Giao đề thi', icon: 'quiz', tab: true },
     { route: '#/tutor', label: 'Gia sư AI', icon: 'smart_toy', tab: true },
   ];
 

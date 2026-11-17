@@ -86,6 +86,33 @@ function createDb(opts) {
     if (p[0] === 'classes' && p.length === 1 && op === 'list') {
       return !!uid && filters.some((f) => f[0] === 'teacherId' && f[1] === '==' && f[2] === uid);
     }
+    if (p[0] === 'classes' && p[2] === 'exams') {
+      // classes/{code}/exams/{eid}[/pages|key|subs/{id}] — bản port firestore.rules
+      const code = p[1];
+      const owns = ownsClass(uid, code);
+      const member = !!uid && docs.has('classes/' + code + '/members/' + uid);
+      if (p.length <= 4) {
+        if (op === 'get' || op === 'list') return owns || member;
+        if (op === 'create') return owns && after.teacherId === uid;
+        return owns;
+      }
+      const sub = p[4];
+      const eid = p[3];
+      if (sub === 'pages') return op === 'get' || op === 'list' ? owns || member : owns;
+      if (sub === 'key') {
+        if (op === 'get' || op === 'list') return owns || docs.has('classes/' + code + '/exams/' + eid + '/subs/' + uid);
+        return owns;
+      }
+      if (sub === 'subs') {
+        if (p.length === 5) return op === 'list' && owns;
+        const id = p[5];
+        if (op === 'get') return uid === id || owns;
+        if (op === 'create') return uid === id && member && after.uid === id && docs.has('classes/' + code + '/exams/' + eid);
+        if (op === 'delete') return owns;
+        return false;
+      }
+      return false;
+    }
     if (p[0] === 'classes' && p[2] === 'members') {
       const code = p[1];
       if (p.length === 3 && op === 'list') return ownsClass(uid, code);

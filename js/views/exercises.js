@@ -741,8 +741,10 @@
 
     function extrasCard() {
       const extras = X.extrasForGrade(grade);
-      const exams = X.examsForGrade(grade);
-      if (extras.length === 0 && exams.length === 0) return null;
+      // Đề kiểm tra đã tách câu nằm ở Kho đề thi (#/exams); trang Bài tập chỉ dẫn sang đó.
+      const examCount = X.examsForGrade(grade).length;
+      const exams = examsOnly ? X.examsForGrade(grade) : [];
+      if (extras.length === 0 && exams.length === 0 && examCount === 0) return null;
       const groups = new Map();
       for (const x of extras) {
         const key = x.k === 'exam' ? 'Đề kiểm tra tổng hợp' : 'Ôn tập chương ' + (x.ch || '');
@@ -759,6 +761,14 @@
         'section',
         { class: 'card stack-sm' },
         el('h2', { class: 'card-title' }, U.icon('assignment'), 'Ôn tập chương & đề kiểm tra'),
+        !examsOnly && examCount
+          ? el(
+              'div',
+              { class: 'row' },
+              el('p', { class: 'muted-sm grow' }, examCount + ' đề kiểm tra giữa kì, cuối kì của ' + C.GRADE_LABELS[grade] + ' nằm trong Kho đề thi.'),
+              el('a', { class: 'btn btn-sm btn-outline', href: '#/exams' }, U.icon('quiz'), 'Mở Kho đề thi'),
+            )
+          : null,
         exams.length
           ? el(
               'p',
@@ -889,7 +899,6 @@
 
   AM.views = AM.views || {};
   AM.views.exercises = view;
-  AM.views.exams = function (params, ctx) {
-    return view(params, ctx, { examsOnly: true });
-  };
+  // Kho đề thi (#/exams) có view riêng ở js/views/exams.js, dùng chung cách ghi kết quả.
+  AM.exerciseResults = { record: recordResult, clear: clearResult };
 })(window.AM);

@@ -81,7 +81,6 @@
     '/theory',
     '/practice',
     '/exercises',
-    '/exams',
     '/errors',
     '/classroom',
   ];

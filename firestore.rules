@@ -12,6 +12,7 @@ rules_version = '2';
 //   learners/{uid}/data/{key}       the student's own learning blobs
 //   classes/{code}                  one document per class, id IS the join code
 //   classes/{code}/members/{uid}    roster + a copy of each member's progress
+//   classes/{code}/exams/{id}       đề giáo viên tải lên (+ pages, key, subs)
 //
 // Three roles: 'student', 'teacher', 'admin'.
 //
@@ -56,6 +57,12 @@ service cloud.firestore {
     /** The uid that owns the given class, or null when the class is gone. */
     function classOwner(code) {
       return get(/databases/$(database)/documents/classes/$(code)).data.teacherId;
+    }
+
+    /** Học sinh đã vào lớp (có dòng trong danh sách lớp). */
+    function isMember(code) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/classes/$(code)/members/$(request.auth.uid));
     }
 
     function ownsClass(code) {
@@ -184,6 +191,41 @@ service cloud.firestore {
 
       // A student may leave; a teacher may remove someone from their class.
       allow delete: if isSelf(uid) || ownsClass(code);
+    }
+
+    // -----------------------------------------------------------------------
+    // classes/{code}/exams/{id} — đề giáo viên tải lên cho lớp (kiểu Azota)
+    //
+    //   pages/{n}   ảnh từng trang đề (data URL, mỗi trang một tài liệu)
+    //   key/main    đáp án trắc nghiệm — học sinh chỉ đọc được SAU KHI đã nộp
+    //   subs/{uid}  bài nộp — học sinh nộp một lần, không sửa; giáo viên xóa
+    //               để cho làm lại
+    // -----------------------------------------------------------------------
+    match /classes/{code}/exams/{eid} {
+      allow read: if ownsClass(code) || isMember(code);
+      allow create: if ownsClass(code) && request.resource.data.teacherId == request.auth.uid;
+      allow update, delete: if ownsClass(code);
+
+      match /pages/{pid} {
+        allow read: if ownsClass(code) || isMember(code);
+        allow write: if ownsClass(code);
+      }
+
+      match /key/{kid} {
+        allow read: if ownsClass(code)
+          || exists(/databases/$(database)/documents/classes/$(code)/exams/$(eid)/subs/$(request.auth.uid));
+        allow write: if ownsClass(code);
+      }
+
+      match /subs/{uid} {
+        allow get: if isSelf(uid) || ownsClass(code);
+        allow list: if ownsClass(code);
+        allow create: if isSelf(uid) && isMember(code)
+          && request.resource.data.uid == uid
+          && exists(/databases/$(database)/documents/classes/$(code)/exams/$(eid));
+        allow update: if false;
+        allow delete: if ownsClass(code);
+      }
     }
   }
 }
